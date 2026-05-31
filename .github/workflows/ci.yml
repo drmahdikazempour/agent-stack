@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
+      - name: Lint SKILL.md sizes & frontmatter
+        run: node bin/agent-stack.js doctor --skills-only
+      - name: Test (incl. e2e init + idempotency)
+        run: npm test
+      - name: License guard (no non-permissive imports under src/)
+        run: |
+          if grep -rnE "from ['\"].*(context-mode|token-optimizer)" src/ ; then
+            echo "::error::Non-permissive adapter imported under src/ — must be runtime shell-out only."
+            exit 1
+          fi
+          echo "License guard passed."
