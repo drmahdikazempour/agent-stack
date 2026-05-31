@@ -31,17 +31,17 @@ export function buildPlan(detection: Detection, opts: InitOptions): Plan {
 
   const targets = opts.targets ?? detection.hosts;
 
-  const adapters = adaptersForProfile(profile.graph, profile.compression, profile.caveman).filter(
+  const adapters = adaptersForProfile(profile).filter(
     (a) => a.permissive || opts.allowNoncommercial,
   );
 
-  const ctx = buildContext(detection, profileName, profile);
+  const ctx = buildContext(detection, profileName, profile, adapters, targets);
 
   const files = generateClaude(ctx);
   if (targets.includes("cursor")) files.push(...generateCursor(ctx));
   files.push(...generateMcp(ctx));
 
-  const hooks = hooksForProfile(profile);
+  const hooks = hooksForProfile(profile, adapters);
 
   const alreadyInstalled =
     !opts.force &&

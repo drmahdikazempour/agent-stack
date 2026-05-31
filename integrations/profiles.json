@@ -47,13 +47,14 @@
       "requires": []
     },
     "max": {
-      "description": "Everything on at once: code map + compression + terse output + all skills, agents, and hooks + measurement. Maximum token reduction.",
+      "description": "Everything on at once: the full external tool stack (rtk + code-review-graph + graphify + caveman + claude-handoff + gbrain) layered over agent-stack's built-ins, plus all skills, agents, hooks, and measurement. Maximum token reduction.",
       "graph": "builtin",
       "compression": "builtin",
       "caveman": true,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer", "stack-reviewer"],
-      "requires": []
+      "requires": [],
+      "tools": ["rtk", "code-review-graph", "graphify", "caveman", "claude-handoff", "gbrain"]
     }
   }
 }

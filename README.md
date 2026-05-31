@@ -183,7 +183,7 @@ A **profile** bundles a graph backend + compression + skill set + hook config. `
 | 🟣 `multimodal` | built-in map | built-in | ≥ 5 PDFs / video / large images |
 | 🟡 `spec` | built-in map | built-in | spec-kit / cc-spex detected |
 | ⚪ `research` | none | built-in | `--profile research --allow-noncommercial` |
-| 🔴 `max` | built-in map | built-in **+ terse** | `--all` — everything on at once |
+| 🔴 `max` | external graph + built-in fallback | built-in **+ terse + rtk** | `--all` — full external stack on at once |
 
 ```bash
 agent-stack profile use review   # swap & regenerate
@@ -241,13 +241,12 @@ agent-stack uninstall                # restore backup, remove generated files
 
 | Flag | Effect |
 |------|--------|
-| `--all` | Turn on **every** feature at once (the `max` profile) |
+| `--all` | Full external stack at once (the `max` profile): rtk + code-review-graph + graphify + caveman + claude-handoff + gbrain |
 | `--yes` | Skip the single confirm prompt |
 | `--dry-run` | Print the plan, write nothing |
-| `--targets claude,cursor` | Force the host list (skip auto-detect) |
+| `--targets claude,cursor` | Force the host list (Cursor gets the portable subset: rtk + MCP graph tools) |
 | `--profile <name>` | Force a profile (`code` `review` `multimodal` `spec` `research` `max`) |
-| `--no-install` | Don't install `ccusage` (configs only) |
-| `--allow-noncommercial` | Enable opt-in adapters (`context-mode`, `token-optimizer`) |
+| `--no-install` | Write configs only; print install guidance instead of installing |
 | `--overwrite` | Replace existing files instead of merging (still backs up) |
 | `--force` | Re-run even if already installed |
 
@@ -291,14 +290,14 @@ agent-stack/
 │   ├── constants.ts            # all spec values (token budgets, limits)
 │   ├── core/                   # detect · plan · safe-writer · backup · token estimator
 │   ├── builtin/                # graph (code map) · compress (output compression)
-│   ├── generate/               # claude · cursor · mcp file builders
-│   ├── adapters/               # ccusage + detect-only externals; install + hooks
+│   ├── generate/               # claude · cursor · mcp · coordinator file builders
+│   ├── adapters/               # registry · detect-tools · install · hooks
 │   ├── wire-hooks.ts           # SOLE writer of settings.json hooks
 │   ├── activate.ts             # post-write verification chain
 │   ├── audit.ts                # token-budget linting
 │   └── commands/               # init + maintenance commands
 ├── skills/                     # 5 Agent Skills (stack-bootstrap, -doctor, …)
-├── integrations/               # profiles.json · versions.json · licenses.json
+├── integrations/               # profiles.json · tools.json
 ├── templates/                  # generation notes
 └── test/                       # vitest: unit · golden · e2e init in a tmpdir
 ```
@@ -408,16 +407,21 @@ Yes — `init` is idempotent. A matching prior install is a no-op unless you pas
 
 ## 🙏 Credits & prior art
 
-agent-stack composes ideas from across the Claude/agent token-optimization ecosystem. It **vendors none** of them — its built-in code map and compression are original MIT code, and the only tool it auto-installs is `ccusage`. Full, transparent attribution (integrated vs. optional vs. inspiration, with licenses) lives in **[CREDITS.md](CREDITS.md)**.
+agent-stack composes a permissive, real tool stack. It **vendors none** of it — its built-in code map and compression are original MIT code that act as the **fallback** when a tool isn't installed. Every integrated tool is MIT or Apache-2.0; nothing non-permissive is wired in. Tools are detected first, then installed via their own toolchains (cargo / uv / pipx / bun / `claude plugin`), with guidance when a toolchain is missing. Full, transparent attribution with licenses and exact install commands lives in **[CREDITS.md](CREDITS.md)** and **[integrations/tools.json](integrations/tools.json)**.
 
-At a glance:
+The `max` profile (`init --all`) activates, all at once:
 
-| Relationship | Projects |
-|---|---|
-| **Integrated** | [ccusage](https://github.com/ryoppippi/ccusage) (measurement) |
-| **Optional** (detect-only) | `rtk`, `codegraph`, [code-review-graph](https://github.com/tirth8205/code-review-graph), [graphify](https://github.com/safishamsi/graphify), [cc-spex](https://github.com/rhuss/cc-spex) |
-| **Opt-in** (`--allow-noncommercial`) | [context-mode](https://github.com/mksglu/context-mode), [token-optimizer](https://github.com/alexgreensh/token-optimizer) |
-| **Inspiration** | [claude-token-optimizer](https://github.com/nadimtuhin/claude-token-optimizer), [superpowers](https://github.com/obra/superpowers), [vercel-labs/skills](https://github.com/vercel-labs/skills), `caveman` |
+| Tool | License | Integration | Job |
+|---|---|---|---|
+| [ccusage](https://github.com/ryoppippi/ccusage) | MIT | npm binary | Token-usage measurement (always on) |
+| [rtk](https://github.com/rtk-ai/rtk) | Apache-2.0 | PATH binary | Command proxy — cut heavy command output 60-90% |
+| [code-review-graph](https://github.com/tirth8205/code-review-graph) | MIT | MCP server | Primary code map (graph with edges + impact radius) |
+| [graphify](https://github.com/safishamsi/graphify) | MIT | CLI / skill | Knowledge graph for whole-repo, multi-file-type questions |
+| [caveman](https://github.com/JuliusBrussee/caveman) | MIT | Claude Code plugin | Terse-output mode |
+| [claude-handoff](https://github.com/willseltzer/claude-handoff) | MIT | Claude Code plugin | Session continuity (`/handoff:*`) |
+| [gbrain](https://github.com/garrytan/gbrain) | MIT | Bun CLI / plugin | Persistent cross-session memory |
+
+The generated `CLAUDE.md` and `AGENTS.md` carry a **tool coordinator** that routes each job to the right tool, with the built-ins named as the explicit fallback. Cursor gets only the portable subset (`rtk` + the MCP/CLI graph tools). **Inspiration** (not integrated): [claude-token-optimizer](https://github.com/nadimtuhin/claude-token-optimizer), [superpowers](https://github.com/obra/superpowers), [vercel-labs/skills](https://github.com/vercel-labs/skills), [gstack](https://github.com/garrytan/gstack).
 
 ## 🔗 References
 

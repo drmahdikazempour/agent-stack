@@ -1,10 +1,10 @@
 {
   "name": "@drmahdikazempour/agent-stack",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Skills-first optimization toolkit for Claude Code (+ Cursor). One command sets up, activates, and measures an optimized agent context.",
+  "description": "Claude Code optimization toolkit and tool coordinator. One command detects, installs, and wires a permissive external stack (rtk, code-review-graph, graphify, caveman, claude-handoff, gbrain) over built-in fallbacks, then measures the token savings. Cursor gets the portable subset (rtk + MCP graph tools).",
   "keywords": [
     "claude",
     "claude-code",

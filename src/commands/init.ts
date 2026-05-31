@@ -26,9 +26,10 @@ function printPlan(plan: Plan): void {
   if (d.existing.claudeMd) console.log(`  Existing: CLAUDE.md (${d.existing.claudeMd.tokens} tokens, will merge)`);
   if (d.existing.claudeDir) console.log(`  Existing: .claude/ (will back up)`);
   console.log("");
-  console.log(color.bold("Will install:"));
+  console.log(color.bold("Will set up tools:"));
   for (const a of plan.adapters) {
-    console.log(`  - ${a.name.padEnd(18)} @ ${a.version.padEnd(8)} (${a.spdx})`);
+    const src = a.repo ?? a.version ?? "";
+    console.log(`  - ${a.name.padEnd(18)} ${a.integration.padEnd(7)} ${src.padEnd(28)} (${a.spdx})`);
   }
   console.log(`  - ${getProfileSkillCount(plan)} skills (${plan.profile} profile)`);
   console.log("");
@@ -110,17 +111,24 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
 
   const writer = new SafeWriter(opts.cwd);
   try {
-    // 5. Install adapter binaries
+    // 5. Install the active tool stack (detect → install-if-missing → guidance)
     const installs: InstallOutcome[] = [];
     for (const a of plan.adapters) {
-      installs.push(ensureAdapter(a, { install: !opts.noInstall }));
+      installs.push(ensureAdapter(a, { install: !opts.noInstall, cwd: opts.cwd }));
     }
     const installedNames = installs
       .filter((i) => i.status === "installed" || i.status === "present")
       .map((i) => i.adapter);
     console.log(
-      `  ${sym.ok} Adapters: ${installs.map((i) => `${i.adapter}(${i.status})`).join(", ")}`,
+      `  ${sym.ok} Tools: ${installs.map((i) => `${i.adapter}(${i.status})`).join(", ")}`,
     );
+    // Surface clear, deliberate guidance for anything we couldn't fully auto-install.
+    const needsHelp = installs.filter((i) => i.guidance && i.status !== "present" && i.status !== "installed");
+    if (needsHelp.length) {
+      console.log("");
+      console.log(color.bold("  Finish installing (run these yourself):"));
+      for (const i of needsHelp) console.log(`    ${sym.warn} ${i.adapter}: ${i.guidance}`);
+    }
 
     // 6. Generate files
     const writeRes = writer.writePlanned(plan.files);

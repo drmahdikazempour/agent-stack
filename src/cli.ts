@@ -70,15 +70,18 @@ ${color.bold("Maintenance:")}
   agent-stack uninstall               restore backup, remove generated files
 
 ${color.bold("init flags:")}
-  --all                  turn on EVERY feature at once (the 'max' profile)
+  --all                  full stack at once (the 'max' profile): rtk + code-review-graph +
+                         graphify + caveman + claude-handoff + gbrain over the built-ins
   --yes                  skip the confirm prompt
   --dry-run              show the plan, write nothing
-  --targets claude,cursor force target list
+  --targets claude,cursor force target list (Cursor uses the portable subset: rtk + MCP graph tools)
   --profile <name>       force profile (code|review|multimodal|spec|research|max)
-  --no-install           don't install ccusage (configs only)
-  --allow-noncommercial  enable opt-in adapters (context-mode, token-optimizer)
+  --no-install           write configs only; print install guidance instead of installing
   --overwrite            replace existing files instead of merging (still backs up)
   --force                re-run even if already installed
+
+${color.bold("External tools are detected first; missing ones are installed via their own")}
+${color.bold("toolchains (cargo/uv/pipx/bun/claude plugin), with guidance when a toolchain is absent.")}
 `;
 
 export async function main(argv = process.argv.slice(2)): Promise<number> {

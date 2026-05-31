@@ -1,50 +1,32 @@
 import fs from "node:fs";
-import type { AdapterDescriptor } from "../core/types.js";
+import type { AdapterDescriptor, ProfileConfig } from "../core/types.js";
 import { integrationsPath } from "../core/pkg-root.js";
 
-// Loaded from the integrations/ JSON so versions & licenses live in one place.
-const versions = JSON.parse(fs.readFileSync(integrationsPath("versions.json"), "utf8")) as {
-  adapters: Record<string, { version: string; install: any; fallback?: any }>;
-};
-const licenses = JSON.parse(fs.readFileSync(integrationsPath("licenses.json"), "utf8")) as {
-  adapters: Record<string, { spdx: string; permissive: boolean; requires?: string }>;
+// Loaded from integrations/tools.json — the single source of truth for every
+// external tool's source repo, ordered install strategies, integration kind,
+// detection method, MCP server entry, coordinator role, and license.
+const data = JSON.parse(fs.readFileSync(integrationsPath("tools.json"), "utf8")) as {
+  tools: Record<string, Omit<AdapterDescriptor, "name">>;
 };
 
 export function getAdapter(name: string): AdapterDescriptor {
-  const v = versions.adapters[name];
-  const l = licenses.adapters[name];
-  if (!v || !l) throw new Error(`Unknown adapter: ${name}`);
-  return {
-    name,
-    version: v.version,
-    install: v.install,
-    fallback: v.fallback,
-    spdx: l.spdx,
-    permissive: l.permissive,
-    requires: l.requires,
-  };
+  const t = data.tools[name];
+  if (!t) throw new Error(`Unknown tool: ${name}`);
+  return { name, ...t };
 }
 
 export function allAdapterNames(): string[] {
-  return Object.keys(versions.adapters);
+  return Object.keys(data.tools);
 }
 
-const BUILTIN = new Set(["builtin", "none", ""]);
-
 /**
- * Adapters a profile needs. Built-in graph/compression aren't adapters (they
- * ship in src/builtin/). ccusage (measurement) is always present. An external
- * graph/compression name maps to a detect-only adapter that is used only if its
- * real binary is already on PATH.
+ * The external tools a profile activates. Measurement (ccusage) is always
+ * present; a profile's `tools` list adds the rest. Built-in graph/compression
+ * are not adapters (they ship in src/builtin/) — they're the fallback when an
+ * external tool is absent.
  */
-export function adaptersForProfile(
-  graph: string,
-  compression: string,
-  _caveman: boolean,
-): AdapterDescriptor[] {
-  const names = new Set<string>();
-  names.add("ccusage"); // measurement is always present
-  if (graph && !BUILTIN.has(graph)) names.add(graph);
-  if (compression && !BUILTIN.has(compression)) names.add(compression);
+export function adaptersForProfile(profile: ProfileConfig): AdapterDescriptor[] {
+  const names = new Set<string>(["ccusage"]);
+  for (const t of profile.tools ?? []) names.add(t);
   return [...names].map(getAdapter);
 }
