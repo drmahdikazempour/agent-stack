@@ -109,20 +109,13 @@ Done.
 
 One shot, ten steps, fully reversible. `--dry-run` stops after the plan; `--yes` skips the single confirm.
 
-```mermaid
-flowchart LR
-    A([🔍 Detect]) --> B([📋 Plan])
-    B --> C{Confirm?}
-    C -->|--dry-run| Z([Stop · nothing written])
-    C -->|yes| D([💾 Back up])
-    D --> E([📦 Install ccusage])
-    E --> F([📝 Generate files])
-    F --> G([🪝 Wire hooks])
-    G --> H([✅ Activate · verify])
-    H -->|fails| R([↩️ Roll back])
-    H -->|ok| I([🗺️ Build code map])
-    I --> J([📊 Baseline])
-    J --> K([🎉 Summarize])
+```text
+  detect ─▶ plan ─▶ confirm ─▶ back up ─▶ install ─▶ generate ─▶ wire hooks
+                      │                                                │
+            --dry-run ┘ (stop)                                         ▼
+                                                                   activate
+   summarize ◀── baseline ◀── code map ◀───────────────────────────┘  │
+                                                          fails ──▶ roll back
 ```
 
 | # | Step | What happens |
@@ -266,27 +259,23 @@ agent-stack uninstall                # restore backup, remove generated files
 
 **One source of truth, two faces, zero runtime dependencies.**
 
-```mermaid
-flowchart TD
-    subgraph SRC["📦 @drmahdikazempour/agent-stack"]
-        CLI["CLI (src/)"]
-        BUILTIN["builtin/<br/>graph · compress"]
-        GEN["generate/<br/>claude · cursor · mcp"]
-        WIRE["wire-hooks<br/>(sole settings.json writer)"]
-        ACT["activate<br/>(verify or roll back)"]
-        SKILLS["skills/<br/>5 Agent Skills"]
-    end
-
-    CLI --> GEN
-    CLI --> BUILTIN
-    CLI --> WIRE
-    CLI --> ACT
-
-    GEN -->|writes| CC["🟠 Claude Code<br/>CLAUDE.md · .claude/skills · agents<br/>commands · settings.json · .claudeignore"]
-    GEN -->|mirrors| CUR["🔵 Cursor<br/>.cursor/rules/*.mdc · AGENTS.md"]
-    SKILLS -.installable into.-> CC
-    SKILLS -.installable into.-> CUR
-    BUILTIN -->|.agent-stack/graph.md| CC
+```text
+                  @drmahdikazempour/agent-stack
+   ┌──────────────────────────────────────────────────────┐
+   │  CLI  (src/)                                           │
+   │    builtin/    graph (code map) · compress             │
+   │    generate/   claude · cursor · mcp                   │
+   │    wire-hooks  ← sole writer of settings.json          │
+   │    activate    ← verify, or roll back on failure       │
+   │  skills/       5 Agent Skills                          │
+   └───────────────┬──────────────────────┬────────────────┘
+            writes  │               mirrors │
+                    ▼                       ▼
+         🟠 Claude Code              🔵 Cursor
+         CLAUDE.md                   .cursor/rules/*.mdc
+         .claude/skills · agents     AGENTS.md
+         commands · settings.json
+         .claudeignore · graph.md
 ```
 
 > **Skills decide _when_; the CLI decides _how_.** Skills call the CLI under the hood; you normally run `init` once and never touch the CLI again.
@@ -322,19 +311,14 @@ agent-stack/
 
 The savings come from changing **what enters the context window**, not from a black box:
 
-```mermaid
-flowchart LR
-    subgraph BEFORE["❌ Before"]
-        B1["Read 12 files to<br/>find one function"]
-        B2["Paste 500-line<br/>build log"]
-        B3["Verbose CLAUDE.md<br/>+ node_modules noise"]
-    end
-    subgraph AFTER["✅ After"]
-        A1["Grep graph.md →<br/>open 1 file"]
-        A2["Pipe through compress →<br/>~60% smaller"]
-        A3["≤800-token CLAUDE.md<br/>+ .claudeignore"]
-    end
-    BEFORE -->|agent-stack| AFTER
+```text
+   ❌ Before                          ✅ After (agent-stack)
+   ─────────────────────────         ─────────────────────────────────
+   read 12 files to find       ──▶   grep graph.md → open 1 file
+   one function
+   paste a 500-line log        ──▶   pipe through compress → ~60% smaller
+   verbose CLAUDE.md +         ──▶   ≤800-token CLAUDE.md + .claudeignore
+   node_modules noise
 ```
 
 | Lever | Mechanism | Typical effect |
@@ -422,13 +406,27 @@ Yes — `init` is idempotent. A matching prior install is a no-op unless you pas
 
 ---
 
+## 🙏 Credits & prior art
+
+agent-stack composes ideas from across the Claude/agent token-optimization ecosystem. It **vendors none** of them — its built-in code map and compression are original MIT code, and the only tool it auto-installs is `ccusage`. Full, transparent attribution (integrated vs. optional vs. inspiration, with licenses) lives in **[CREDITS.md](CREDITS.md)**.
+
+At a glance:
+
+| Relationship | Projects |
+|---|---|
+| **Integrated** | [ccusage](https://github.com/ryoppippi/ccusage) (measurement) |
+| **Optional** (detect-only) | `rtk`, `codegraph`, [code-review-graph](https://github.com/tirth8205/code-review-graph), [graphify](https://github.com/safishamsi/graphify), [cc-spex](https://github.com/rhuss/cc-spex) |
+| **Opt-in** (`--allow-noncommercial`) | [context-mode](https://github.com/mksglu/context-mode), [token-optimizer](https://github.com/alexgreensh/token-optimizer) |
+| **Inspiration** | [claude-token-optimizer](https://github.com/nadimtuhin/claude-token-optimizer), [superpowers](https://github.com/obra/superpowers), [vercel-labs/skills](https://github.com/vercel-labs/skills), `caveman` |
+
 ## 🔗 References
 
 - 📦 **npm** — [@drmahdikazempour/agent-stack](https://www.npmjs.com/package/@drmahdikazempour/agent-stack)
 - 🐙 **GitHub** — [drmahdikazempour/agent-stack](https://github.com/drmahdikazempour/agent-stack)
+- 🙏 **Credits** — [CREDITS.md](CREDITS.md)
 - 📚 **Claude Code docs** — [docs.anthropic.com/claude-code](https://docs.anthropic.com/en/docs/claude-code)
 - 🤖 **Agent Skills** — [Claude Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills)
-- 📐 **Cursor rules** — [cursor.com/docs](https://docs.cursor.com/context/rules)
+- 📐 **Cursor rules** — [docs.cursor.com](https://docs.cursor.com/context/rules)
 - 📊 **ccusage** — [github.com/ryoppippi/ccusage](https://github.com/ryoppippi/ccusage)
 
 ---
