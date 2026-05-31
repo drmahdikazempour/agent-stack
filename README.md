@@ -20,8 +20,49 @@ npx @drmahdikazempour/agent-stack init --all
 
 ---
 
+## 🤖 Paste this into Claude Code
+
+Copy the block below into a [Claude Code](https://docs.anthropic.com/en/docs/claude-code) session at the root of any repo. It installs and activates the full stack, audits the result, baselines token usage, and pushes to `main` — all in one go.
+
+```text
+Set up agent-stack in this repo and ship it. Do all of the following:
+
+1. INSTALL + ACTIVATE the full stack:
+   npx -y @drmahdikazempour/agent-stack@latest init --all --yes
+   This detects the host, installs the external tools (rtk, code-review-graph,
+   graphify, caveman, claude-handoff, gbrain) over the built-in fallbacks,
+   generates CLAUDE.md + AGENTS.md with the tool coordinator, wires the hooks,
+   and captures a token baseline. If any tool prints "Finish installing"
+   guidance (missing toolchain), run that command for me, then continue.
+
+2. AUDIT + LINT the result and summarize:
+   npx @drmahdikazempour/agent-stack audit
+   npx @drmahdikazempour/agent-stack doctor
+   Report the CLAUDE.md token budget, skill/MCP budgets, hook conflicts, and
+   which tools are available vs absent.
+
+3. TRACK TOKEN USAGE — explain how it works and show the baseline:
+   npx @drmahdikazempour/agent-stack measure --since 7d
+   Tell me the baseline tokens/day, where usage is logged
+   (.agent-stack/usage.jsonl), and that I should re-run measure after ~a week
+   to see the % reduction. The Stop hook logs ccusage every turn automatically.
+
+4. COMMIT + PUSH TO MAIN:
+   Stage the generated files, commit with a clear message, and push to main.
+   If I'm on a feature branch, open a PR and merge it to main instead.
+   Then confirm CI is green.
+
+Walk me through each step's output as you go, and stop to ask me only if a
+step genuinely needs my input (e.g. a missing toolchain you can't install).
+```
+
+> **Tip:** prefer `init --all` (full stack). For a lighter setup, replace step 1 with plain `npx -y @drmahdikazempour/agent-stack@latest init --yes`.
+
+---
+
 ## 📖 Table of contents
 
+- [Paste this into Claude Code](#-paste-this-into-claude-code)
 - [Why agent-stack](#-why-agent-stack)
 - [Quick start](#-quick-start)
 - [How `init` works](#-how-init-works)
