@@ -1,120 +1,442 @@
-# agent-stack
+<div align="center">
 
-**Skills-first optimization toolkit for Claude Code (+ Cursor).** One command takes any repo from zero to a fully optimized, profile-matched agent setup — detected, installed, generated, wired, **activated, and measured** — in under two minutes.
+# 🧰 agent-stack
+
+### One command. Everything set up. Activated. Measured.
+
+**A skills-first optimization toolkit for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (+ [Cursor](https://cursor.com)) that takes any repo from zero to a fully optimized, token-efficient agent setup — in under two minutes.**
+
+[![npm version](https://img.shields.io/npm/v/@drmahdikazempour/agent-stack?color=cb3837&logo=npm)](https://www.npmjs.com/package/@drmahdikazempour/agent-stack)
+[![CI](https://github.com/drmahdikazempour/agent-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/drmahdikazempour/agent-stack/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![node](https://img.shields.io/badge/node-%E2%89%A518-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![zero deps](https://img.shields.io/badge/runtime%20deps-0-success)](#-architecture)
 
 ```bash
-cd my-repo
-npx @drmahdikazempour/agent-stack init        # smart defaults
-npx @drmahdikazempour/agent-stack init --all  # turn on EVERY feature at once
+npx @drmahdikazempour/agent-stack init --all
 ```
 
-That's the whole install. `init` auto-detects host, repo, and profile; installs the right adapters; generates the full Claude Code surface and the Cursor mirror; merges hooks safely; verifies everything loads; and records a `ccusage` token baseline. It only prompts when the answer is genuinely ambiguous (typically the single `Proceed?` confirm).
+</div>
 
 ---
 
-## Why
+## 📖 Table of contents
 
-The Claude token-optimization ecosystem is fragmented into single-layer point tools — shell-output compressors, context graphs, output styles, measurement, continuity. No tool **composes** them, auto-generates the full agent surface for both hosts, resolves the licensing minefield, merges hooks safely, or gives a neutral before/after.
+- [Why agent-stack](#-why-agent-stack)
+- [Quick start](#-quick-start)
+- [How `init` works](#-how-init-works)
+- [Built-in token cutters](#-built-in-token-cutters)
+- [Profiles](#-profiles)
+- [Command reference](#-command-reference)
+- [Architecture](#-architecture)
+- [How it cuts tokens](#-how-it-cuts-tokens)
+- [Measuring savings](#-measuring-savings)
+- [Development](#-development)
+- [Roadmap](#-roadmap)
+- [FAQ](#-faq)
+- [References](#-references)
 
-agent-stack orchestrates the good tools through **pinned, version-locked adapters** and generates everything from **one source of truth, two faces**: an Agent Skills package and an npm CLI. Skills decide *when*; the CLI decides *how*.
+---
 
-## What `init` does (one shot, in order)
+## 💡 Why agent-stack
 
-1. **Detect** — host(s), repo type, framework, package manager, existing configs, git state.
-2. **Plan** — print a one-screen plan (`--dry-run` stops here).
-3. **Confirm** — a single `Proceed? [Y/n]` (`--yes` skips it).
-4. **Back up** — copy any existing config into `.agent-stack.bak.<ts>/`.
-5. **Install** — `ccusage` (the one genuine external, for measurement). Everything else is **built-in** (see below) or used only if you already have the real binary on PATH. `--no-install` skips even ccusage.
-6. **Generate** — `CLAUDE.md` (≤800 tokens), 5 skills, subagents, commands, `.claudeignore`, `.cursor/rules/*.mdc`, `AGENTS.md`, MCP scaffold, and the initial code map.
-7. **Wire hooks** — a single merged write to `.claude/settings.json` (the hook merger is the *sole* writer).
-8. **Activate** — verify each skill loads, each hook is present, each binary is callable. Rolls back on failure.
-9. **Baseline** — `ccusage` snapshot stored in `.agent-stack/baseline.json`.
-10. **Summarize** — files written, adapters, hooks, baseline, next steps.
+The Claude token-optimization ecosystem is **fragmented into single-layer point tools** — shell-output compressors, context graphs, output styles, measurement, continuity. None of them _compose_. Setting up a repo today means hand-picking 5–10 tools, reading each install doc, hand-merging hooks, hand-writing `CLAUDE.md`, mirroring to Cursor, and measuring savings yourself.
 
-## Built-in token cutters
+> [!NOTE]
+> **agent-stack does it in one command** — and ships the token-cutting machinery _built in_, so there's nothing fictional to install and nothing to wire by hand.
 
-These ship *inside* the package — no external install, nothing fictional. They're what actually reduce tokens:
+| Without agent-stack | With agent-stack |
+| --- | --- |
+| Hand-pick & install 5–10 tools | `npx … init --all` |
+| Hand-write `CLAUDE.md` | Generated, ≤ 800 tokens, verified |
+| Manually merge `settings.json` hooks | Single safe merge, sole writer |
+| Mirror everything to Cursor by hand | Auto-mirrored, kept in sync |
+| Guess at savings | Measured with `ccusage` |
 
-- **Code map** — `agent-stack graph refresh` writes a compact `.agent-stack/graph.md` (every file → its exported symbols). The agent greps one small file to find where something lives instead of reading whole directories. `graph query <term>` searches it. Refreshed automatically on `SessionStart`.
-- **Output compression** — `agent-stack compress` is a stdin→stdout filter that strips ANSI, folds duplicate lines, and head/tail-elides huge output. Pipe noisy commands through it: `npm run build 2>&1 | npx -y @drmahdikazempour/agent-stack compress` (≈60% fewer chars on a 500-line log).
-- **`.claudeignore` + ≤800-token CLAUDE.md + summary-only subagents** — structural savings on every turn.
-- **Terse mode** (the `max` profile / `--all`) — enforces minimal-word answers.
-- **Measurement** — `ccusage` records real usage so savings are measured, never claimed.
+---
 
-## Commands
-
-```
-# Setup — run once per repo
-npx @drmahdikazempour/agent-stack init [--all] [--yes] [--dry-run] [--targets ...] [--profile ...]
-                     [--no-install] [--allow-noncommercial] [--overwrite] [--force]
-
-# Token cutters (standalone / pipes / hooks)
-npx @drmahdikazempour/agent-stack compress           # cmd 2>&1 | … compress
-npx @drmahdikazempour/agent-stack graph refresh      # rebuild the code map
-npx @drmahdikazempour/agent-stack graph query <term> # find a symbol
-
-# Maintenance — post-install, on demand
-npx @drmahdikazempour/agent-stack audit                  # token counts + budget report
-npx @drmahdikazempour/agent-stack optimize               # apply audit fixes (with approval)
-npx @drmahdikazempour/agent-stack doctor                 # lint everything (exit 1 on issues)
-npx @drmahdikazempour/agent-stack measure [--since 7d]   # ccusage baseline vs current
-npx @drmahdikazempour/agent-stack profile use <name>     # swap profile; regenerate
-npx @drmahdikazempour/agent-stack profile show           # show current profile
-npx @drmahdikazempour/agent-stack graph use <name>       # swap graph backend
-npx @drmahdikazempour/agent-stack handoff write|resume   # continuity files
-npx @drmahdikazempour/agent-stack sync                   # regenerate Cursor mirror from CLAUDE.md
-npx @drmahdikazempour/agent-stack uninstall              # restore backup, remove generated files
-```
-
-## Profiles
-
-A profile bundles a graph backend + compression tool + skill set + hook config. `init` picks one automatically; swap later with `profile use`.
-
-| Profile | Graph | Compression | Auto-picked when |
-|---|---|---|---|
-| `code` (default) | built-in map | built-in compress | normal code repo |
-| `review` | built-in map | built-in | >500 commits **and** CODEOWNERS |
-| `multimodal` | built-in map | built-in | ≥5 PDFs/video/large images |
-| `spec` | built-in map | built-in | spec-kit / cc-spex detected |
-| `research` | none | built-in | `--profile research --allow-noncommercial` |
-| `max` | built-in map | built-in + terse | `--all` (everything on at once) |
-
-## Architecture
-
-One repo, two faces, zero duplication:
-
-- **`skills/`** — the Agent Skills package (`stack-bootstrap`, `-doctor`, `-graph-profile`, `-handoff`, `-measure`), installable into Claude Code and Cursor. Only name + ≤1,024-char description loads at startup.
-- **`src/`** — the npm CLI: deterministic generation, audits, hook merging, activation. Internal modules mirror the planned package boundaries:
-  - `core/` — detect, plan, safe-writer, backup, token estimator, constants.
-  - `generate/` — `claude`, `cursor`, `mcp` file builders (typed, dependency-free templates).
-  - `adapters/` — thin, version-pinned wrappers (`rtk`, `codegraph`, `ccusage`, …) returning hook *specs*.
-  - `wire-hooks.ts` — the **sole** writer of `settings.json` hooks.
-  - `activate.ts` — post-write verification chain.
-  - `audit.ts` — token-budget linting.
-  - `commands/` — `init` + maintenance commands.
-- **`integrations/`** — `profiles.json`, `versions.json` (pinned), `licenses.json` (gates `--allow-noncommercial`).
-
-**Zero runtime dependencies** — the CLI ships pure Node, so `npx @drmahdikazempour/agent-stack init` installs in seconds.
-
-## Licensing & what actually installs
-
-- **Repo:** MIT. The graph and compression are **built in** (MIT, in `src/builtin/`).
-- **Only auto-installed external:** `ccusage` (MIT) for measurement.
-- **Third-party graph/compression tools** (rtk, codegraph, graphify, …) are **detect-only** — used solely if their genuine binary is already on your PATH. agent-stack never installs them by name (those npm names are unrelated packages).
-- **Opt-in (`--allow-noncommercial`):** non-permissive tools (`context-mode` ELv2, `token-optimizer` PolyForm Noncommercial) are **never vendored** — only shelled out to at runtime. CI fails if any code under `src/` imports them.
-
-## Development
+## 🚀 Quick start
 
 ```bash
+cd your-repo
+
+# Smart defaults (auto-detects host, profile, package manager):
+npx @drmahdikazempour/agent-stack init
+
+# …or turn on EVERYTHING at once (max profile):
+npx @drmahdikazempour/agent-stack init --all
+```
+
+<details>
+<summary><b>What you'll see</b> (click to expand)</summary>
+
+```text
+agent-stack v0.2.0
+
+Detected:
+  Host: Claude Code + Cursor
+  Repo: TypeScript / Next.js / pnpm
+  Profile: max (confidence: high)
+
+Will write:
+  20 files → claude, cursor
+  .claude/settings.json (2 hooks merged)
+
+Proceed? [Y/n] y
+
+  ✓ Adapters: ccusage(installed)
+  ✓ Generated 20 files
+  ✓ Wired 2 hooks into settings.json
+  ✓ All skills load, all hooks present, CLAUDE.md verified
+  ✓ Built code map → .agent-stack/graph.md
+  ✓ Baseline: 12,340 tokens/day (ccusage, last 7d avg)
+
+Done.
+```
+
+</details>
+
+> [!TIP]
+> Install it once globally to get the short `agent-stack` command everywhere:
+> ```bash
+> npm i -g @drmahdikazempour/agent-stack
+> agent-stack init --all
+> ```
+
+---
+
+## ⚙️ How `init` works
+
+One shot, ten steps, fully reversible. `--dry-run` stops after the plan; `--yes` skips the single confirm.
+
+```mermaid
+flowchart LR
+    A([🔍 Detect]) --> B([📋 Plan])
+    B --> C{Confirm?}
+    C -->|--dry-run| Z([Stop · nothing written])
+    C -->|yes| D([💾 Back up])
+    D --> E([📦 Install ccusage])
+    E --> F([📝 Generate files])
+    F --> G([🪝 Wire hooks])
+    G --> H([✅ Activate · verify])
+    H -->|fails| R([↩️ Roll back])
+    H -->|ok| I([🗺️ Build code map])
+    I --> J([📊 Baseline])
+    J --> K([🎉 Summarize])
+```
+
+| # | Step | What happens |
+|---|------|--------------|
+| 1 | **Detect** | Host(s), repo type, framework, package manager, existing configs, git state |
+| 2 | **Plan** | Prints a one-screen plan (`--dry-run` stops here) |
+| 3 | **Confirm** | A single `Proceed? [Y/n]` (`--yes` skips) |
+| 4 | **Back up** | Copies any existing config into `.agent-stack.bak.<ts>/` |
+| 5 | **Install** | `ccusage` only — everything else is built in |
+| 6 | **Generate** | `CLAUDE.md`, skills, subagents, commands, `.claudeignore`, Cursor mirror, MCP scaffold |
+| 7 | **Wire hooks** | One merged write to `.claude/settings.json` (sole writer, dedupes, never clobbers yours) |
+| 8 | **Activate** | Verifies each skill loads, each hook is present, `CLAUDE.md` exists — **rolls back on failure** |
+| 9 | **Code map** | Builds the initial `.agent-stack/graph.md` |
+| 10 | **Baseline** | Records a `ccusage` token snapshot for later comparison |
+
+---
+
+## 🔧 Built-in token cutters
+
+These ship **inside the package** — no external install, nothing fictional. They are what actually reduce tokens:
+
+### 🗺️ Code map
+
+```bash
+agent-stack graph refresh        # rebuild .agent-stack/graph.md
+agent-stack graph query <symbol> # find where it's defined
+```
+
+A compact index mapping every source file → its exported symbols. The agent **greps one small file** to find where something lives instead of reading whole directories. Refreshed automatically on `SessionStart`. Supports TypeScript/JavaScript, Python, Go, and Rust.
+
+```text
+# Code map
+_142 files, 906 top-level symbols. Grep this to find a symbol before opening source._
+
+- `src/core/detect.ts`: detect
+- `src/wire-hooks.ts`: mergeHooks, wireHooks, planHooks, countOurHooks
+- …
+```
+
+### 🗜️ Output compression
+
+```bash
+npm run build 2>&1 | npx @drmahdikazempour/agent-stack compress
+```
+
+A `stdin → stdout` filter that strips ANSI codes, folds duplicate lines (`line  (×42)`), and head/tail-elides huge output — **≈ 60 % fewer characters on a 500-line log**, so noisy commands cost a fraction of the context.
+
+### 🪶 Structural savings (always on)
+
+- **`.claudeignore`** keeps `node_modules`, build output, media, and lockfiles out of context.
+- **`CLAUDE.md`** is generated factual-and-tight — **≤ 800 tokens** at startup, verified by `doctor`.
+- **Subagents** (`stack-explorer`, `stack-reviewer`) return _conclusions, not file dumps_.
+- **Terse mode** (the `max` profile) enforces minimal-word answers.
+
+---
+
+## 🎚️ Profiles
+
+A **profile** bundles a graph backend + compression + skill set + hook config. `init` auto-picks one; swap later with `profile use`.
+
+| Profile | Graph | Compression | Auto-picked when |
+|---------|-------|-------------|------------------|
+| 🟢 `code` _(default)_ | built-in map | built-in | normal code repo |
+| 🔵 `review` | built-in map | built-in | > 500 commits **and** CODEOWNERS |
+| 🟣 `multimodal` | built-in map | built-in | ≥ 5 PDFs / video / large images |
+| 🟡 `spec` | built-in map | built-in | spec-kit / cc-spex detected |
+| ⚪ `research` | none | built-in | `--profile research --allow-noncommercial` |
+| 🔴 `max` | built-in map | built-in **+ terse** | `--all` — everything on at once |
+
+```bash
+agent-stack profile use review   # swap & regenerate
+agent-stack profile show         # current profile
+```
+
+---
+
+## 📟 Command reference
+
+<div align="center">
+
+**Setup — run once per repo**
+
+</div>
+
+```bash
+agent-stack init [--all] [--yes] [--dry-run] [--targets claude,cursor]
+                 [--profile <name>] [--no-install] [--allow-noncommercial]
+                 [--overwrite] [--force]
+```
+
+<div align="center">
+
+**Token cutters — standalone, in pipes, or via hooks**
+
+</div>
+
+```bash
+agent-stack compress                 # cmd 2>&1 | agent-stack compress
+agent-stack graph refresh            # rebuild the code map
+agent-stack graph query <term>       # find a symbol / file
+```
+
+<div align="center">
+
+**Maintenance — post-install, on demand**
+
+</div>
+
+```bash
+agent-stack audit                    # token counts + budget report
+agent-stack optimize                 # apply audit fixes (with approval)
+agent-stack doctor                   # lint everything (exit 1 on issues)
+agent-stack measure [--since 7d]     # ccusage baseline vs current
+agent-stack profile use <name>       # swap profile; regenerate
+agent-stack graph use <name>         # swap to an external graph (if installed)
+agent-stack handoff write|resume     # continuity across sessions
+agent-stack sync                     # regenerate Cursor mirror from CLAUDE.md
+agent-stack uninstall                # restore backup, remove generated files
+```
+
+<details>
+<summary><b>init flags in detail</b></summary>
+
+| Flag | Effect |
+|------|--------|
+| `--all` | Turn on **every** feature at once (the `max` profile) |
+| `--yes` | Skip the single confirm prompt |
+| `--dry-run` | Print the plan, write nothing |
+| `--targets claude,cursor` | Force the host list (skip auto-detect) |
+| `--profile <name>` | Force a profile (`code` `review` `multimodal` `spec` `research` `max`) |
+| `--no-install` | Don't install `ccusage` (configs only) |
+| `--allow-noncommercial` | Enable opt-in adapters (`context-mode`, `token-optimizer`) |
+| `--overwrite` | Replace existing files instead of merging (still backs up) |
+| `--force` | Re-run even if already installed |
+
+</details>
+
+---
+
+## 🏗️ Architecture
+
+**One source of truth, two faces, zero runtime dependencies.**
+
+```mermaid
+flowchart TD
+    subgraph SRC["📦 @drmahdikazempour/agent-stack"]
+        CLI["CLI (src/)"]
+        BUILTIN["builtin/<br/>graph · compress"]
+        GEN["generate/<br/>claude · cursor · mcp"]
+        WIRE["wire-hooks<br/>(sole settings.json writer)"]
+        ACT["activate<br/>(verify or roll back)"]
+        SKILLS["skills/<br/>5 Agent Skills"]
+    end
+
+    CLI --> GEN
+    CLI --> BUILTIN
+    CLI --> WIRE
+    CLI --> ACT
+
+    GEN -->|writes| CC["🟠 Claude Code<br/>CLAUDE.md · .claude/skills · agents<br/>commands · settings.json · .claudeignore"]
+    GEN -->|mirrors| CUR["🔵 Cursor<br/>.cursor/rules/*.mdc · AGENTS.md"]
+    SKILLS -.installable into.-> CC
+    SKILLS -.installable into.-> CUR
+    BUILTIN -->|.agent-stack/graph.md| CC
+```
+
+> **Skills decide _when_; the CLI decides _how_.** Skills call the CLI under the hood; you normally run `init` once and never touch the CLI again.
+
+<details>
+<summary><b>Repository layout</b></summary>
+
+```text
+agent-stack/
+├── bin/agent-stack.js          # npx entrypoint
+├── src/
+│   ├── cli.ts                  # arg parsing + command dispatch
+│   ├── constants.ts            # all spec values (token budgets, limits)
+│   ├── core/                   # detect · plan · safe-writer · backup · token estimator
+│   ├── builtin/                # graph (code map) · compress (output compression)
+│   ├── generate/               # claude · cursor · mcp file builders
+│   ├── adapters/               # ccusage + detect-only externals; install + hooks
+│   ├── wire-hooks.ts           # SOLE writer of settings.json hooks
+│   ├── activate.ts             # post-write verification chain
+│   ├── audit.ts                # token-budget linting
+│   └── commands/               # init + maintenance commands
+├── skills/                     # 5 Agent Skills (stack-bootstrap, -doctor, …)
+├── integrations/               # profiles.json · versions.json · licenses.json
+├── templates/                  # generation notes
+└── test/                       # vitest: unit · golden · e2e init in a tmpdir
+```
+
+</details>
+
+---
+
+## 📉 How it cuts tokens
+
+The savings come from changing **what enters the context window**, not from a black box:
+
+```mermaid
+flowchart LR
+    subgraph BEFORE["❌ Before"]
+        B1["Read 12 files to<br/>find one function"]
+        B2["Paste 500-line<br/>build log"]
+        B3["Verbose CLAUDE.md<br/>+ node_modules noise"]
+    end
+    subgraph AFTER["✅ After"]
+        A1["Grep graph.md →<br/>open 1 file"]
+        A2["Pipe through compress →<br/>~60% smaller"]
+        A3["≤800-token CLAUDE.md<br/>+ .claudeignore"]
+    end
+    BEFORE -->|agent-stack| AFTER
+```
+
+| Lever | Mechanism | Typical effect |
+|-------|-----------|----------------|
+| Code map | grep `graph.md` instead of reading files | fewer, smaller file reads |
+| Compression | fold/elide large command output | ≈ 60 % fewer chars on big logs |
+| `.claudeignore` | exclude junk from context | no `node_modules`/build noise |
+| Tight `CLAUDE.md` | factual root ≤ 800 tokens | lower fixed startup cost |
+| Subagents | return summaries, not dumps | bounded sub-task context |
+
+---
+
+## 📊 Measuring savings
+
+Savings are **measured, never claimed** — via the neutral [`ccusage`](https://github.com/ryoppippi/ccusage) tool.
+
+```bash
+# init already stored a baseline. After ~a week of work:
+agent-stack measure --since 7d
+```
+
+```text
+agent-stack measure (since 7d)
+
+  Current:  7,180 input tokens/day  (ccusage)
+  Baseline: 12,340 input tokens/day (captured 2026-05-24)
+
+  −41.8% input-token reduction vs baseline (target ≥ 40%)
+```
+
+---
+
+## 🛠️ Development
+
+```bash
+git clone https://github.com/drmahdikazempour/agent-stack
+cd agent-stack
 npm install
+
 npm run build        # tsup → dist/ (ESM + CJS + d.ts)
 npm test             # vitest: unit + golden + e2e init in a tmpdir
 npm run typecheck
 node bin/agent-stack.js doctor --skills-only   # lint shipped skills
 ```
 
-Releases are managed with Changesets + GitHub Actions.
+> [!IMPORTANT]
+> **CI** runs typecheck → build → skill lint → tests → a license guard (fails if `src/` imports a non-permissive adapter). **Publishing** is tag-triggered and idempotent (skips if the version is already on npm). Releases use [Changesets](https://github.com/changesets/changesets).
 
-## License
+---
 
-MIT — see [LICENSE](LICENSE).
+## 🗺️ Roadmap
+
+- [x] **v0.1** — one-shot `init`, profiles, hook merger, generators, 5 skills, maintenance commands, tests, CI
+- [x] **v0.2** — built-in code map + output compression, `max` profile / `--all`, honest install model, robust publish CI
+- [ ] **v0.3** — Claude plugin wrapper, real third-party graph adapters auto-detected, deeper `optimize` codemods
+- [ ] **future** — offline LLMLingua/DSPy compression pass, long-term memory tier
+
+---
+
+## ❓ FAQ
+
+<details>
+<summary><b>Does it install a bunch of random binaries?</b></summary>
+
+No. Only `ccusage` (the genuine Claude Code usage tool) is auto-installed. Graph and compression are **built in**. Third-party tools are used **only if their real binary is already on your PATH** — never installed by name.
+</details>
+
+<details>
+<summary><b>Will it clobber my existing CLAUDE.md / settings.json?</b></summary>
+
+No. Everything is backed up to `.agent-stack.bak.<ts>/` first, `CLAUDE.md` is merged, and the hook merger **only adds** its own entries (tagged + deduped) — your hooks are preserved.
+</details>
+
+<details>
+<summary><b>Is it safe to run twice?</b></summary>
+
+Yes — `init` is idempotent. A matching prior install is a no-op unless you pass `--force`.
+</details>
+
+<details>
+<summary><b>How do I undo it?</b></summary>
+
+`agent-stack uninstall` restores the pre-init backup and removes the generated files.
+</details>
+
+---
+
+## 🔗 References
+
+- 📦 **npm** — [@drmahdikazempour/agent-stack](https://www.npmjs.com/package/@drmahdikazempour/agent-stack)
+- 🐙 **GitHub** — [drmahdikazempour/agent-stack](https://github.com/drmahdikazempour/agent-stack)
+- 📚 **Claude Code docs** — [docs.anthropic.com/claude-code](https://docs.anthropic.com/en/docs/claude-code)
+- 🤖 **Agent Skills** — [Claude Agent Skills](https://docs.anthropic.com/en/docs/claude-code/skills)
+- 📐 **Cursor rules** — [cursor.com/docs](https://docs.cursor.com/context/rules)
+- 📊 **ccusage** — [github.com/ryoppippi/ccusage](https://github.com/ryoppippi/ccusage)
+
+---
+
+<div align="center">
+
+**MIT licensed** · Built for people who'd rather ship than wire configs.
+
+_Made with [Claude Code](https://claude.com/claude-code)._
+
+</div>
