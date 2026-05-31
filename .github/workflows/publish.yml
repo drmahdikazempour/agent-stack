@@ -2,6 +2,10 @@ name: Publish
 
 # Publishes the current package version to npm using the NPM_TOKEN secret.
 # Trigger by pushing a version tag (e.g. v0.2.0) or manually from the Actions tab.
+#
+# Robust by design: if NPM_TOKEN isn't set, or the current version is already on
+# npm, the job SKIPS that step with a notice instead of failing — so CI stays
+# green and re-running is safe (idempotent).
 on:
   push:
     tags: ["v*"]
@@ -23,7 +27,29 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - name: Publish to npm
-        run: npm publish --access public
+
+      - name: Check for npm credentials
+        id: creds
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=No npm token::Secret NPM_TOKEN is not set. Add it with: gh secret set NPM_TOKEN. Skipping publish."
+          else
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm (skips if already published)
+        if: steps.creds.outputs.has_token == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "::notice title=Already published::$NAME@$VERSION is already on npm; nothing to do."
+          else
+            echo "Publishing $NAME@$VERSION…"
+            npm publish --access public
+          fi
