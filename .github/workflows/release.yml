@@ -1,8 +1,11 @@
 name: Release
 
+# Manual-only: run from the Actions tab when you actually want to publish.
+# Requires repo secret NPM_TOKEN and "Allow GitHub Actions to create and
+# approve pull requests" (Settings → Actions → General). Until then, leaving
+# this on `push` would fail and email on every commit.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
