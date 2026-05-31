@@ -1,0 +1,59 @@
+{
+  "name": "agent-stack",
+  "version": "0.1.0",
+  "description": "Skills-first optimization toolkit for Claude Code (+ Cursor). One command sets up, activates, and measures an optimized agent context.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cursor",
+    "agent-skills",
+    "token-optimization",
+    "cli"
+  ],
+  "license": "MIT",
+  "author": "agent-stack contributors",
+  "type": "module",
+  "bin": {
+    "agent-stack": "bin/agent-stack.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "skills",
+    "integrations",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint:skills": "node bin/agent-stack.js doctor --skills-only || true",
+    "changeset": "changeset",
+    "release": "npm run build && changeset publish",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

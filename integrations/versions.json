@@ -1,0 +1,42 @@
+{
+  "$comment": "Pinned versions of every adapter. The CLI never installs a floating version.",
+  "adapters": {
+    "rtk": {
+      "version": "0.38.4",
+      "install": { "kind": "cargo", "package": "rtk-cli", "bin": "rtk" },
+      "fallback": { "kind": "npm", "package": "@rtk/cli", "bin": "rtk" }
+    },
+    "codegraph": {
+      "version": "0.8.2",
+      "install": { "kind": "npm", "package": "codegraph", "bin": "codegraph" }
+    },
+    "code-review-graph": {
+      "version": "0.4.1",
+      "install": { "kind": "npm", "package": "code-review-graph", "bin": "code-review-graph" }
+    },
+    "graphify": {
+      "version": "0.6.0",
+      "install": { "kind": "skill", "package": "safishamsi/graphify" }
+    },
+    "ccusage": {
+      "version": "15.2.1",
+      "install": { "kind": "npm", "package": "ccusage", "bin": "ccusage" }
+    },
+    "caveman": {
+      "version": "1.8.2",
+      "install": { "kind": "skill", "package": "caveman" }
+    },
+    "superpowers": {
+      "version": "2.0.0",
+      "install": { "kind": "skill", "package": "obra/superpowers" }
+    },
+    "context-mode": {
+      "version": "0.3.0",
+      "install": { "kind": "skill", "package": "mksglu/context-mode" }
+    },
+    "cc-spex": {
+      "version": "0.2.0",
+      "install": { "kind": "skill", "package": "rhuss/cc-spex" }
+    }
+  }
+}

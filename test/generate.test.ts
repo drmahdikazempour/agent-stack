@@ -1,0 +1,71 @@
+import { describe, it, expect } from "vitest";
+import { SPEC } from "../src/constants.js";
+import { detect } from "../src/core/detect.js";
+import { getProfileConfig } from "../src/core/plan.js";
+import { buildContext } from "../src/generate/context.js";
+import { generateClaude } from "../src/generate/claude.js";
+import { generateCursor } from "../src/generate/cursor.js";
+import { estimateTokens } from "../src/core/token-estimator.js";
+import { parseFrontmatter } from "../src/generate/frontmatter.js";
+import { makeTmpRepo, cleanup } from "./helpers.js";
+
+function ctxFor(dir: string) {
+  const d = detect(dir);
+  return buildContext(d, "code", getProfileConfig("code"));
+}
+
+describe("generators", () => {
+  it("CLAUDE.md stays within the 800-token startup budget", () => {
+    const dir = makeTmpRepo({ "package.json": "{}" });
+    try {
+      const files = generateClaude(ctxFor(dir));
+      const claudeMd = files.find((f) => f.path === "CLAUDE.md")!;
+      expect(estimateTokens(claudeMd.contents)).toBeLessThanOrEqual(SPEC.CLAUDE_MD_MAX_TOKENS);
+    } finally {
+      cleanup(dir);
+    }
+  });
+
+  it("every skill description is within the 1024-char hard limit", () => {
+    const dir = makeTmpRepo({ "package.json": "{}" });
+    try {
+      const files = generateClaude(ctxFor(dir));
+      const skills = files.filter((f) => f.path.endsWith("/SKILL.md"));
+      expect(skills.length).toBe(5);
+      for (const s of skills) {
+        const { data } = parseFrontmatter(s.contents);
+        expect(data.name).toBeTruthy();
+        expect(data.description.length).toBeLessThanOrEqual(SPEC.SKILL_DESCRIPTION_MAX_CHARS);
+      }
+    } finally {
+      cleanup(dir);
+    }
+  });
+
+  it("combined skill metadata stays within the 500-token budget", () => {
+    const dir = makeTmpRepo({ "package.json": "{}" });
+    try {
+      const files = generateClaude(ctxFor(dir));
+      const total = files
+        .filter((f) => f.path.endsWith("/SKILL.md"))
+        .reduce((sum, s) => {
+          const { data } = parseFrontmatter(s.contents);
+          return sum + estimateTokens(`${data.name} ${data.description}`);
+        }, 0);
+      expect(total).toBeLessThanOrEqual(SPEC.SKILL_METADATA_BUDGET_TOKENS);
+    } finally {
+      cleanup(dir);
+    }
+  });
+
+  it("cursor mirror produces .mdc rules and AGENTS.md", () => {
+    const dir = makeTmpRepo({ "package.json": "{}" });
+    try {
+      const files = generateCursor(ctxFor(dir));
+      expect(files.some((f) => f.path === "AGENTS.md")).toBe(true);
+      expect(files.some((f) => f.path.startsWith(".cursor/rules/") && f.path.endsWith(".mdc"))).toBe(true);
+    } finally {
+      cleanup(dir);
+    }
+  });
+});

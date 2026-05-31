@@ -1,0 +1,19 @@
+/** Public programmatic API (the npm package face). */
+export { detect } from "./core/detect.js";
+export { buildPlan, getProfileConfig, profileExists } from "./core/plan.js";
+export { backupExisting, restoreBackup, latestBackup } from "./core/backup.js";
+export { SafeWriter } from "./core/safe-writer.js";
+export { estimateTokens, withinBudget } from "./core/token-estimator.js";
+export { mergeHooks, wireHooks, planHooks, countOurHooks } from "./wire-hooks.js";
+export { activate, writeManifest } from "./activate.js";
+export { audit } from "./audit.js";
+export { generateClaude } from "./generate/claude.js";
+export { generateCursor } from "./generate/cursor.js";
+export { generateMcp } from "./generate/mcp.js";
+export { buildContext } from "./generate/context.js";
+export { parseFrontmatter, buildFrontmatter } from "./generate/frontmatter.js";
+export { adaptersForProfile, getAdapter, allAdapterNames } from "./adapters/registry.js";
+export { hooksForAdapters } from "./adapters/hooks.js";
+export { runInit } from "./commands/init.js";
+export { SPEC, PATHS, TOOL_VERSION } from "./constants.js";
+export type * from "./core/types.js";

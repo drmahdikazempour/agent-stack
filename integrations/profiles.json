@@ -1,0 +1,50 @@
+{
+  "$comment": "A profile is a named bundle of graph backend + compression tool + skill set + hook config. init picks one automatically; `profile use <name>` swaps it.",
+  "profiles": {
+    "code": {
+      "description": "Normal code repo, no large media. The default.",
+      "graph": "codegraph",
+      "compression": "rtk",
+      "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer", "stack-reviewer"],
+      "requires": []
+    },
+    "review": {
+      "description": "PR/review-heavy repo (many PRs, CODEOWNERS).",
+      "graph": "code-review-graph",
+      "compression": "rtk",
+      "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer", "stack-reviewer"],
+      "requires": []
+    },
+    "multimodal": {
+      "description": "Repo contains PDFs, video, many large images.",
+      "graph": "graphify",
+      "compression": "rtk",
+      "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer"],
+      "requires": []
+    },
+    "research": {
+      "description": "Large-output sandbox via context-mode. Opt-in only.",
+      "graph": "none",
+      "compression": "context-mode",
+      "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer"],
+      "requires": ["allow-noncommercial"]
+    },
+    "spec": {
+      "description": "spec-kit / cc-spex detected, or explicit flag.",
+      "graph": "codegraph",
+      "compression": "rtk",
+      "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer", "stack-reviewer"],
+      "requires": []
+    }
+  }
+}

@@ -1,0 +1,225 @@
+import { PATHS } from "../constants.js";
+import type { PlannedFile } from "../core/types.js";
+import { estimateTokens } from "../core/token-estimator.js";
+import { buildFrontmatter } from "./frontmatter.js";
+import type { GenContext } from "./context.js";
+
+function pf(path: string, contents: string, host: PlannedFile["host"] = "shared"): PlannedFile {
+  return { path, contents, tokens: estimateTokens(contents), host };
+}
+
+/** Factual root CLAUDE.md, kept ≤800 tokens (PRD success metric). */
+function claudeMd(ctx: GenContext): string {
+  return `# ${ctx.repoName}
+
+> Optimized by [agent-stack](https://github.com/drmahdikazempour/agent-stack) · profile: \`${ctx.profileName}\`
+
+## Stack
+- Language: ${ctx.language}
+- Framework: ${ctx.framework}
+- Package manager: ${ctx.packageManager}
+
+## Context tooling (active)
+- Code graph: \`${ctx.graph}\` — query before reading files wholesale.
+- Shell compression: \`${ctx.compression}\` — large command output is compressed before it hits context.
+- Measurement: \`ccusage\` — token usage is logged per turn.
+
+## How to work here
+- Prefer the graph and targeted reads over loading whole directories.
+- Keep responses terse; the user values low token cost.
+- Skills available: ${ctx.profile.skills.map((s) => `\`/${s}\``).join(", ")}.
+- See \`ARCHITECTURE_MAP.md\` for structure and \`COMMON_MISTAKES.md\` for known traps.
+
+## Conventions
+- Match existing code style; do not reformat unrelated code.
+- Run the project's own test/lint commands before claiming done.
+`;
+}
+
+function architectureMap(ctx: GenContext): string {
+  return `# Architecture Map
+
+_Auto-scaffolded by agent-stack on ${ctx.date}. Fill in as the project grows; the graph backend (\`${ctx.graph}\`) keeps the live view._
+
+## Entry points
+- (add the main entry points here)
+
+## Key modules
+- (add modules and their responsibilities)
+
+## Data flow
+- (describe request/data flow)
+
+## External services
+- (APIs, queues, datastores)
+`;
+}
+
+function commonMistakes(ctx: GenContext): string {
+  return `# Common Mistakes
+
+_Things that have bitten contributors here. Add to this list whenever a non-obvious bug is fixed._
+
+- Don't load entire directories — query \`${ctx.graph}\` first.
+- Don't paste raw, uncompressed command output; \`${ctx.compression}\` handles that automatically via a hook.
+- Don't edit \`.claude/settings.json\` hooks by hand — run \`npx agent-stack\` commands so the hook merger stays the sole writer.
+`;
+}
+
+function claudeIgnore(): string {
+  return `# agent-stack: keep large/irrelevant paths out of context
+node_modules/
+dist/
+build/
+.next/
+coverage/
+*.log
+*.lock
+.agent-stack.bak.*/
+*.mp4
+*.mov
+*.pdf
+`;
+}
+
+const SKILL_BODIES: Record<string, { description: string; body: string }> = {
+  "stack-bootstrap": {
+    description:
+      "Set up or re-sync the agent-stack optimization layer (CLAUDE.md, skills, hooks, graph, compression) for this repo. Use when onboarding a repo, after cloning, or when the agent context feels unoptimized. Runs `agent-stack init` under the hood and reports what changed.",
+    body: `# stack-bootstrap
+
+Bootstrap or re-sync this repo's optimization layer.
+
+## When to use
+- First time working in a repo that has agent-stack configured.
+- After pulling changes that touched \`.claude/\` or \`integrations/\`.
+
+## What to do
+1. Run \`npx agent-stack doctor\` to see current state.
+2. If unconfigured or drifted, run \`npx agent-stack init\` (it backs up, merges, and verifies).
+3. Report the chosen profile, wired hooks, and baseline token count.
+
+Skills decide *when*; the CLI decides *how*. Always shell out to the CLI for file writes.`,
+  },
+  "stack-doctor": {
+    description:
+      "Lint the agent-stack setup: CLAUDE.md token budget, SKILL.md description/body limits, hook conflicts, frontmatter validity, and adapter availability. Use when something feels off, before committing config changes, or to confirm a healthy setup. Wraps `agent-stack doctor`.",
+    body: `# stack-doctor
+
+Lint the optimization layer and report problems.
+
+## Checks
+- CLAUDE.md ≤ 800 tokens.
+- Each SKILL.md description ≤ 1024 chars; body ≤ 500 lines.
+- Zero hook conflicts in settings.json.
+- Every adapter binary callable (or clearly flagged config-only).
+
+## What to do
+Run \`npx agent-stack doctor\`. Surface failures with the exact file and limit. Offer \`agent-stack optimize\` for auto-fixable issues.`,
+  },
+  "stack-graph-profile": {
+    description:
+      "Inspect or switch the code-graph backend and profile for this repo (code/review/multimodal/spec). Use when the repo's focus changes (e.g. heavy PR review, adding media) or graph queries feel wrong. Wraps `agent-stack graph use` and `agent-stack profile use`.",
+    body: `# stack-graph-profile
+
+Manage the graph backend and profile.
+
+## When to use
+- Repo focus shifted (more PR review, added PDFs/video, spec-driven work).
+- Graph queries are returning poor context.
+
+## What to do
+- Show current profile: read \`.agent-stack/installed.json\`.
+- Switch profile: \`npx agent-stack profile use <code|review|multimodal|spec>\`.
+- Switch only the graph: \`npx agent-stack graph use <name>\`.
+Both regenerate affected files and re-verify.`,
+  },
+  "stack-handoff": {
+    description:
+      "Write or resume a continuity handoff so work survives across sessions or teammates: current task, decisions, open threads, next steps. Use when ending a session, switching context, or picking up someone else's work. Wraps `agent-stack handoff write|resume`.",
+    body: `# stack-handoff
+
+Persist and resume working state across sessions.
+
+## Write a handoff
+\`npx agent-stack handoff write\` — captures git state, the current task, decisions made, and next steps into \`.agent-stack/handoff.md\`.
+
+## Resume
+\`npx agent-stack handoff resume\` — prints the latest handoff so you can continue exactly where the last session stopped.
+
+Use at the end of any session and at the start of any resumed one.`,
+  },
+  "stack-measure": {
+    description:
+      "Measure token usage and savings via ccusage: establish a baseline and compare before/after. Use after init (baseline) and again after a week to quantify the input-token reduction. Wraps `agent-stack measure`.",
+    body: `# stack-measure
+
+Quantify token usage with the neutral \`ccusage\` tool.
+
+## What to do
+- Baseline: \`npx agent-stack measure\` (init already stored one in \`.agent-stack/baseline.json\`).
+- Compare: \`npx agent-stack measure --since 7d\` — reports baseline vs recent average and the % input-token reduction.
+
+Never report vendor self-claimed savings; always use ccusage's local JSONL.`,
+  },
+};
+
+function skillFile(name: string): PlannedFile {
+  const meta = SKILL_BODIES[name];
+  if (!meta) throw new Error(`No body defined for skill ${name}`);
+  const contents = buildFrontmatter({ name, description: meta.description }, meta.body);
+  return pf(`${PATHS.claudeSkills}/${name}/SKILL.md`, contents, "claude");
+}
+
+const AGENT_BODIES: Record<string, { description: string; tools: string; body: string }> = {
+  "stack-explorer": {
+    description: "Read-only repo exploration via the code graph. Returns conclusions, not file dumps.",
+    tools: "Read, Grep, Glob, Bash",
+    body: `You are a read-only exploration subagent. Use the code graph first, then targeted reads. Return only the conclusion the caller needs — never paste whole files. Keep output terse to preserve the caller's context budget.`,
+  },
+  "stack-reviewer": {
+    description: "Diff-focused reviewer that checks correctness and convention adherence on changed code only.",
+    tools: "Read, Grep, Glob, Bash",
+    body: `You review the current diff against the base branch. Focus on correctness, security, and this repo's conventions. Cite \`file:line\`. Do not review unchanged code. Be concise.`,
+  },
+};
+
+function agentFile(name: string): PlannedFile {
+  const meta = AGENT_BODIES[name];
+  if (!meta) throw new Error(`No body defined for agent ${name}`);
+  const contents = buildFrontmatter(
+    { name, description: meta.description, tools: meta.tools },
+    meta.body,
+  );
+  return pf(`${PATHS.claudeAgents}/${name}.md`, contents, "claude");
+}
+
+const COMMANDS: Record<string, string> = {
+  "stack-audit": "Run `npx agent-stack audit` and summarize the token report: CLAUDE.md size, skill metadata budget, MCP tool-def budget, and any items over limit.",
+  "stack-handoff": "Run `npx agent-stack handoff write` to checkpoint, or `resume` to restore context. Ask which the user wants if unclear.",
+  "stack-measure": "Run `npx agent-stack measure --since 7d` and report baseline vs current token usage and the % reduction.",
+};
+
+function commandFile(name: string, instruction: string): PlannedFile {
+  const contents = buildFrontmatter(
+    { description: instruction.split(".")[0]! },
+    `# /${name}\n\n${instruction}\n`,
+  );
+  return pf(`${PATHS.claudeCommands}/${name}.md`, contents, "claude");
+}
+
+/** Generate the full Claude Code surface for a profile. */
+export function generateClaude(ctx: GenContext): PlannedFile[] {
+  const files: PlannedFile[] = [
+    pf(PATHS.claudeMd, claudeMd(ctx)),
+    pf(PATHS.architectureMap, architectureMap(ctx)),
+    pf(PATHS.commonMistakes, commonMistakes(ctx)),
+    pf(PATHS.claudeIgnore, claudeIgnore()),
+  ];
+  for (const skill of ctx.profile.skills) files.push(skillFile(skill));
+  for (const agent of ctx.profile.agents) files.push(agentFile(agent));
+  for (const [name, instr] of Object.entries(COMMANDS)) files.push(commandFile(name, instr));
+  return files;
+}
+
+export { SKILL_BODIES };
