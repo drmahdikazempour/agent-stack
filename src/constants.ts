@@ -45,4 +45,4 @@ export type HookEvent = (typeof HOOK_EVENTS)[number];
 /** Marker prefix on every hook command agent-stack writes, so we can find & dedupe our own. */
 export const HOOK_SIGNATURE = "agent-stack";
 
-export const TOOL_VERSION = "0.1.0";
+export const TOOL_VERSION = "0.3.0";

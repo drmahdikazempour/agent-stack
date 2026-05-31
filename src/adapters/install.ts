@@ -1,97 +1,79 @@
-import type { AdapterDescriptor, AdapterInstallSpec } from "../core/types.js";
+import type { AdapterDescriptor } from "../core/types.js";
 import { hasBinary, run } from "../core/util.js";
+import { isToolPresent } from "./detect-tools.js";
 
 export interface InstallOutcome {
   adapter: string;
-  status: "present" | "installed" | "skipped" | "failed" | "config-only" | "optional-absent";
+  status: "present" | "installed" | "skipped" | "failed" | "config-only" | "needs-toolchain";
   detail: string;
-}
-
-function binName(spec: AdapterInstallSpec): string | null {
-  return spec.bin ?? (spec.kind === "skill" ? null : spec.package);
-}
-
-function toolchainAvailable(kind: AdapterInstallSpec["kind"]): boolean {
-  if (kind === "npm" || kind === "skill") return hasBinary("npm") || hasBinary("npx");
-  if (kind === "cargo") return hasBinary("cargo");
-  return false;
-}
-
-function doInstall(spec: AdapterInstallSpec, version: string): { ok: boolean; detail: string } {
-  switch (spec.kind) {
-    case "npm": {
-      const r = run("npm", ["i", "-g", `${spec.package}@${version}`], { timeoutMs: 180_000 });
-      return { ok: r.ok, detail: r.ok ? `npm i -g ${spec.package}@${version}` : r.stderr.slice(0, 200) };
-    }
-    case "cargo": {
-      const r = run("cargo", ["install", spec.package, "--version", version], { timeoutMs: 600_000 });
-      return { ok: r.ok, detail: r.ok ? `cargo install ${spec.package}` : r.stderr.slice(0, 200) };
-    }
-    case "skill": {
-      // Cross-agent skills install via vercel-labs/skills (`npx skills add`).
-      const r = run("npx", ["-y", "skills", "add", spec.package], { timeoutMs: 180_000 });
-      return { ok: r.ok, detail: r.ok ? `skills add ${spec.package}` : r.stderr.slice(0, 200) };
-    }
-    case "preinstalled":
-      // Never auto-installed; handled before doInstall is ever reached.
-      return { ok: false, detail: "preinstalled adapters are not auto-installed" };
-  }
+  /** Manual finish-it instruction, shown when we couldn't fully auto-install. */
+  guidance?: string;
 }
 
 /**
- * Ensure an adapter binary/skill is available. Honors --no-install (configOnly)
- * and falls back gracefully when a toolchain is missing (PRD §12 risk row).
+ * Detect → install-if-missing → use. Tries the tool's ordered install
+ * strategies and stops at the first whose toolchain is on PATH. Never auto-runs
+ * `curl|sh` one-liners — those live in `guidance` so the user runs them
+ * deliberately. Honors --no-install (configOnly) and degrades to clear guidance
+ * when no toolchain is available rather than failing the whole init.
  */
 export function ensureAdapter(
   adapter: AdapterDescriptor,
-  opts: { install: boolean },
+  opts: { install: boolean; cwd: string },
 ): InstallOutcome {
-  const bin = binName(adapter.install);
-
-  if (bin && hasBinary(bin)) {
-    return { adapter: adapter.name, status: "present", detail: `${bin} already on PATH` };
+  // 1. Already there? Use it.
+  if (isToolPresent(adapter, opts.cwd)) {
+    return { adapter: adapter.name, status: "present", detail: `${adapter.name} already available` };
   }
 
-  // Never auto-install 'preinstalled' adapters (their npm names are unrelated).
-  if (adapter.install.kind === "preinstalled") {
-    return {
-      adapter: adapter.name,
-      status: "optional-absent",
-      detail: `optional; install the real ${adapter.install.package} yourself to enable it`,
-    };
-  }
-
+  // 2. Config-only mode: write configs, leave install to the user.
   if (!opts.install) {
-    return { adapter: adapter.name, status: "config-only", detail: "skipped (--no-install)" };
-  }
-
-  if (!toolchainAvailable(adapter.install.kind)) {
-    // Try fallback if its toolchain exists.
-    if (adapter.fallback && toolchainAvailable(adapter.fallback.kind)) {
-      const r = doInstall(adapter.fallback, adapter.version);
-      if (r.ok) return { adapter: adapter.name, status: "installed", detail: r.detail };
-    }
     return {
       adapter: adapter.name,
       status: "config-only",
-      detail: `no ${adapter.install.kind} toolchain; config written, install ${adapter.install.package} manually`,
+      detail: "skipped (--no-install)",
+      guidance: adapter.guidance,
     };
   }
 
-  const primary = doInstall(adapter.install, adapter.version);
-  if (primary.ok) return { adapter: adapter.name, status: "installed", detail: primary.detail };
-
-  if (adapter.fallback && toolchainAvailable(adapter.fallback.kind)) {
-    const fb = doInstall(adapter.fallback, adapter.version);
-    if (fb.ok) return { adapter: adapter.name, status: "installed", detail: `${fb.detail} (fallback)` };
+  // 3. Try each strategy whose toolchain is present, in order, until one lands.
+  //    Falling through on failure matters: e.g. a PEP-668 "externally-managed"
+  //    pip3 fails, but the next available pip (or pipx/uv) may succeed.
+  const available = adapter.install.filter((s) => hasBinary(s.needs));
+  if (available.length === 0) {
+    const needed = [...new Set(adapter.install.map((s) => s.needs))].join(" / ");
+    return {
+      adapter: adapter.name,
+      status: "needs-toolchain",
+      detail: `no toolchain on PATH (need ${needed})`,
+      guidance: adapter.guidance,
+    };
   }
 
-  return { adapter: adapter.name, status: "failed", detail: primary.detail };
+  let lastErr = "";
+  for (const strategy of available) {
+    const primary = run(strategy.run[0]!, strategy.run.slice(1), { timeoutMs: 600_000 });
+    if (!primary.ok) {
+      lastErr = `${strategy.run.join(" ")} → ${primary.stderr.slice(0, 140)}`;
+      continue;
+    }
+    if (strategy.then) {
+      const second = run(strategy.then[0]!, strategy.then.slice(1), { timeoutMs: 600_000 });
+      if (!second.ok) {
+        lastErr = `${strategy.then.join(" ")} → ${second.stderr.slice(0, 140)}`;
+        continue;
+      }
+    }
+    if (isToolPresent(adapter, opts.cwd)) {
+      return { adapter: adapter.name, status: "installed", detail: strategy.run.join(" ") };
+    }
+    lastErr = `${strategy.run.join(" ")} ran but tool still not detected`;
+  }
+
+  return { adapter: adapter.name, status: "failed", detail: lastErr, guidance: adapter.guidance };
 }
 
-/** Verify a binary adapter is callable after install (activation step). */
-export function verifyAdapter(adapter: AdapterDescriptor): boolean {
-  const bin = binName(adapter.install);
-  if (!bin) return true; // skill-only adapters are verified by the host, not us
-  return hasBinary(bin);
+/** Post-write verification (activation step): is the tool callable/available now? */
+export function verifyAdapter(adapter: AdapterDescriptor, cwd: string): boolean {
+  return isToolPresent(adapter, cwd);
 }

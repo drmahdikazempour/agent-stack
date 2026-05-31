@@ -53,13 +53,13 @@ export function activate(
     detail: `${hookCount}/${opts.expectedHooks} agent-stack hooks wired`,
   });
 
-  // 3. Adapter binaries callable (skill-only adapters pass trivially).
+  // 3. Tools available (detection-aware: PATH binary, plugin, skill, or MCP server).
   for (const a of opts.adapters) {
-    const ok = verifyAdapter(a);
+    const ok = verifyAdapter(a, cwd);
     checks.push({
       name: `adapter:${a.name}`,
       ok,
-      detail: ok ? "callable" : "binary not on PATH (config written; install to fully activate)",
+      detail: ok ? "available" : "not detected (config written; install to fully activate)",
     });
   }
 

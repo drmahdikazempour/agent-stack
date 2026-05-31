@@ -49,7 +49,7 @@ describe("graph (built-in code map)", () => {
   });
 });
 
-describe("max profile + adapter model", () => {
+describe("max profile + tool stack", () => {
   it("max turns on caveman (terse) and all skills/agents", () => {
     const p = getProfileConfig("max");
     expect(p.caveman).toBe(true);
@@ -57,16 +57,34 @@ describe("max profile + adapter model", () => {
     expect(p.agents.length).toBeGreaterThan(0);
   });
 
-  it("only ccusage is an installable adapter; built-in graph adds none", () => {
-    const p = getProfileConfig("max");
-    const adapters = adaptersForProfile(p.graph, p.compression, p.caveman);
+  it("max activates the full permissive stack (ccusage + the 6 external tools)", () => {
+    const adapters = adaptersForProfile(getProfileConfig("max"));
+    const names = adapters.map((a) => a.name).sort();
+    expect(names).toEqual(
+      ["caveman", "ccusage", "claude-handoff", "code-review-graph", "gbrain", "graphify", "rtk"].sort(),
+    );
+    // Every wired tool is permissive — no consent gate anywhere.
+    expect(adapters.every((a) => a.permissive)).toBe(true);
+  });
+
+  it("default 'code' profile stays built-ins-only (just ccusage)", () => {
+    const adapters = adaptersForProfile(getProfileConfig("code"));
     expect(adapters.map((a) => a.name)).toEqual(["ccusage"]);
   });
 
-  it("hooks use built-in commands (graph refresh + ccusage)", () => {
-    const hooks = hooksForProfile(getProfileConfig("max"));
-    expect(hooks.some((h) => h.event === "SessionStart" && h.command.includes("graph refresh"))).toBe(true);
+  it("SessionStart hook prefers the external graph backend's own refresh when active", () => {
+    const adapters = adaptersForProfile(getProfileConfig("max"));
+    const hooks = hooksForProfile(getProfileConfig("max"), adapters);
+    const start = hooks.find((h) => h.event === "SessionStart")!;
+    expect(start.command).toContain("code-review-graph update");
+    expect(start.command).not.toContain("agent-stack graph refresh");
     expect(hooks.some((h) => h.event === "Stop" && h.command.includes("ccusage"))).toBe(true);
+  });
+
+  it("falls back to the built-in graph refresh when no external backend is active", () => {
+    const hooks = hooksForProfile(getProfileConfig("max"), []);
+    const start = hooks.find((h) => h.event === "SessionStart")!;
+    expect(start.command).toContain("graph refresh");
   });
 
   it("research profile (graph: none) emits no graph hook", () => {

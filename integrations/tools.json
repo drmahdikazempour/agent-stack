@@ -1,0 +1,107 @@
+{
+  "$comment": "Single source of truth for every external tool agent-stack wires in. Commands here were transcribed from each repo's own INSTALL.md/README/.mcp.json — never guessed. Install strategies are tried in order; the first whose `needs` toolchain is on PATH wins. `curl|sh` one-liners are intentionally NOT auto-run — they live in `guidance` so the user runs them deliberately. All tools are permissive (MIT/Apache-2.0); the two unlicensed tools (token-optimizer, intent-layer) were dropped because permissive members already cover their function.",
+  "tools": {
+    "ccusage": {
+      "version": "20.0.6",
+      "repo": "ryoppippi/ccusage",
+      "integration": "path",
+      "detect": { "kind": "path", "bin": "ccusage" },
+      "install": [{ "needs": "npm", "run": ["npm", "i", "-g", "ccusage@20.0.6"] }],
+      "role": "Measurement only — token usage is logged via the Stop hook; you never call this directly.",
+      "cursor": true,
+      "guidance": "Install measurement tool: npm i -g ccusage",
+      "spdx": "MIT",
+      "permissive": true
+    },
+    "rtk": {
+      "repo": "rtk-ai/rtk",
+      "integration": "path",
+      "detect": { "kind": "path", "bin": "rtk", "verify": ["--version"] },
+      "install": [{ "needs": "cargo", "run": ["cargo", "install", "--git", "https://github.com/rtk-ai/rtk"] }],
+      "role": "Route heavy shell commands (git, npm, build, test, grep) through `rtk` — it proxies them and cuts 60-90% of the output tokens before they hit context.",
+      "cursor": true,
+      "guidance": "Install rtk (Rust Token Killer — NOT crates.io `rtk`, that is a different project): curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh   — then verify with `rtk gain`.",
+      "spdx": "Apache-2.0",
+      "permissive": true
+    },
+    "code-review-graph": {
+      "repo": "tirth8205/code-review-graph",
+      "integration": "mcp",
+      "detect": { "kind": "path", "bin": "code-review-graph" },
+      "install": [
+        { "needs": "uv", "run": ["uv", "tool", "install", "code-review-graph"] },
+        { "needs": "pipx", "run": ["pipx", "install", "code-review-graph"] },
+        { "needs": "pip3", "run": ["pip3", "install", "code-review-graph"] },
+        { "needs": "pip", "run": ["pip", "install", "code-review-graph"] }
+      ],
+      "mcp": { "server": "code-review-graph", "command": "uvx", "args": ["code-review-graph", "serve"] },
+      "refresh": ["code-review-graph", "update"],
+      "role": "Primary code map. To find where a symbol lives, what depends on it, or a review's impact radius, query the `code-review-graph` MCP server instead of reading whole files.",
+      "cursor": true,
+      "guidance": "Install code intelligence graph (Python 3.10+): uv tool install code-review-graph  (or pipx/pip). Then `code-review-graph build` to parse the repo.",
+      "spdx": "MIT",
+      "permissive": true
+    },
+    "graphify": {
+      "repo": "safishamsi/graphify",
+      "integration": "skill",
+      "detect": { "kind": "path", "bin": "graphify" },
+      "install": [
+        { "needs": "uv", "run": ["uv", "tool", "install", "graphifyy"] },
+        { "needs": "pipx", "run": ["pipx", "install", "graphifyy"] },
+        { "needs": "pip3", "run": ["pip3", "install", "graphifyy"] },
+        { "needs": "pip", "run": ["pip", "install", "graphifyy"] }
+      ],
+      "role": "Knowledge graph for whole-repo questions spanning code + docs + schemas. Use the `graphify` skill to build/query a queryable graph when a question crosses many files or file types.",
+      "cursor": true,
+      "guidance": "Install graphify (PyPI package is `graphifyy` (double-y); CLI stays `graphify`): uv tool install graphifyy  (or pipx). Avoid plain `pip` on macOS — see the repo README.",
+      "spdx": "MIT",
+      "permissive": true
+    },
+    "caveman": {
+      "repo": "JuliusBrussee/caveman",
+      "integration": "plugin",
+      "detect": { "kind": "plugin", "name": "caveman" },
+      "install": [
+        {
+          "needs": "claude",
+          "run": ["claude", "plugin", "marketplace", "add", "JuliusBrussee/caveman"],
+          "then": ["claude", "plugin", "install", "caveman@caveman"]
+        }
+      ],
+      "role": "Terse-output mode. When the user wants minimum token cost, follow caveman conventions to compress your own prose.",
+      "cursor": false,
+      "guidance": "Install caveman as a Claude Code plugin: `claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman`  (or: curl -fsSL https://raw.githubusercontent.com/JuliusBrussee/caveman/main/install.sh | bash).",
+      "spdx": "MIT",
+      "permissive": true
+    },
+    "claude-handoff": {
+      "repo": "willseltzer/claude-handoff",
+      "integration": "plugin",
+      "detect": { "kind": "plugin", "name": "handoff" },
+      "install": [
+        {
+          "needs": "claude",
+          "run": ["claude", "plugin", "marketplace", "add", "willseltzer/claude-handoff"],
+          "then": ["claude", "plugin", "install", "handoff@handoff-marketplace"]
+        }
+      ],
+      "role": "Session continuity. At session end or when switching context, run `/handoff:create`; when resuming, `/handoff:resume`.",
+      "cursor": false,
+      "guidance": "Install handoff as a Claude Code plugin: `claude plugin marketplace add willseltzer/claude-handoff && claude plugin install handoff@handoff-marketplace`. If the clone fails with `git@github.com: Permission denied (publickey)`, Claude is cloning over SSH — add a GitHub SSH key, or route SSH→HTTPS with `git config --global url.\"https://github.com/\".insteadOf \"git@github.com:\"`.",
+      "spdx": "MIT",
+      "permissive": true
+    },
+    "gbrain": {
+      "repo": "garrytan/gbrain",
+      "integration": "skill",
+      "detect": { "kind": "path", "bin": "gbrain" },
+      "install": [{ "needs": "bun", "run": ["bun", "install", "-g", "github:garrytan/gbrain"] }],
+      "role": "Persistent memory across sessions. Store durable decisions/context in gbrain and search it before re-deriving prior work.",
+      "cursor": false,
+      "guidance": "Install gbrain (requires Bun): curl -fsSL https://bun.sh/install | bash && bun install -g github:garrytan/gbrain  — then `gbrain --version`. Needs an embedding API key for vector search (keyword search works without).",
+      "spdx": "MIT",
+      "permissive": true
+    }
+  }
+}

@@ -4,6 +4,8 @@ import { PATHS } from "../constants.js";
 import { audit } from "../audit.js";
 import { planHooks } from "../wire-hooks.js";
 import { hooksForProfile } from "../adapters/hooks.js";
+import { adaptersForProfile } from "../adapters/registry.js";
+import { isToolPresent } from "../adapters/detect-tools.js";
 import { getProfileConfig } from "../core/plan.js";
 import { color, sym, fileExists, readJsonSafe } from "../core/util.js";
 import { parseFrontmatter } from "../generate/frontmatter.js";
@@ -53,16 +55,28 @@ export function runDoctor(cwd: string, opts: { skillsOnly?: boolean } = {}): Doc
     if (!item.ok) failures.push(`${item.name}: ${item.detail} (limit ${item.limit})`);
   }
 
-  // Hook conflicts: re-merge our profile's hook specs against current settings.
+  // Hook conflicts + tool availability for the installed profile.
   const manifest = readJsonSafe<{ profile: string }>(path.join(cwd, PATHS.installedManifest));
   if (manifest) {
     try {
       const profile = getProfileConfig(manifest.profile as any);
-      const specs = hooksForProfile(profile);
+      const adapters = adaptersForProfile(profile);
+      const specs = hooksForProfile(profile, adapters);
       const { result } = planHooks(cwd, specs);
       const ok = result.conflicts.length === 0;
       report("hook conflicts", ok, `${result.conflicts.length} conflict(s)`);
       if (!ok) failures.push(`${result.conflicts.length} hook conflict(s)`);
+
+      // Each active tool: present (use it) or absent (finish-it guidance). Absence is
+      // non-fatal — the built-in fallback keeps the stack working — so it shows a
+      // neutral marker, not a failing ✗.
+      for (const a of adapters) {
+        if (a.name === "ccusage") continue;
+        const present = isToolPresent(a, cwd);
+        const mark = present ? sym.ok : sym.warn;
+        console.log(`  ${mark} ${`tool:${a.name}`.padEnd(34)} ${color.dim(present ? "available" : "absent — using built-in fallback")}`);
+        if (!present) console.log(`      ${color.dim(a.guidance)}`);
+      }
     } catch {
       /* profile gone; skip */
     }
