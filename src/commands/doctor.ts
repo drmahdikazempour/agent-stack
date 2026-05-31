@@ -85,6 +85,6 @@ function finish(failures: string[]): DoctorResult {
   }
   console.log(color.red(`${failures.length} issue(s):`));
   for (const f of failures) console.log(`  ${sym.err} ${f}`);
-  console.log(color.dim("Run `npx agent-stack optimize` to auto-fix where possible."));
+  console.log(color.dim("Run `npx @drmahdikazempour/agent-stack optimize` to auto-fix where possible."));
   return { ok: false, failures };
 }

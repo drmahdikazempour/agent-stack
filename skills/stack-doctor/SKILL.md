@@ -17,9 +17,9 @@ Lint the optimization layer and report problems with exact files and limits.
 - Every adapter binary callable, or clearly flagged as config-only.
 
 ## What to do
-1. Run `npx agent-stack doctor`.
+1. Run `npx @drmahdikazempour/agent-stack doctor`.
 2. If it exits non-zero, surface each failure with the file and the limit it broke.
-3. For auto-fixable issues (e.g. CLAUDE.md over budget), offer `npx agent-stack optimize`.
+3. For auto-fixable issues (e.g. CLAUDE.md over budget), offer `npx @drmahdikazempour/agent-stack optimize`.
 4. For hook conflicts, never hand-edit `settings.json` — re-run `init`/`profile use` so the merger reconciles them.
 
 `--skills-only` lints just the SKILL.md files (used in CI).

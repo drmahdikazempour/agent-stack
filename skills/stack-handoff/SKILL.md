@@ -8,14 +8,14 @@ description: Write or resume a continuity handoff so work survives across sessio
 Persist and resume working state across sessions.
 
 ## Write a handoff
-`npx agent-stack handoff write` captures into `.agent-stack/handoff.md`:
+`npx @drmahdikazempour/agent-stack handoff write` captures into `.agent-stack/handoff.md`:
 - current git branch, uncommitted changes, recent commits,
 - a template for the current task, decisions made, and next steps.
 
 Edit the generated file to fill in the narrative parts before you stop.
 
 ## Resume
-`npx agent-stack handoff resume` prints the latest handoff so you can continue exactly where the last session stopped.
+`npx @drmahdikazempour/agent-stack handoff resume` prints the latest handoff so you can continue exactly where the last session stopped.
 
 ## When to use
 - At the end of any working session.

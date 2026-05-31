@@ -204,8 +204,8 @@ function printSummary(plan: Plan, files: number, hooks: number, baseline: string
   console.log("");
   console.log("Next:");
   console.log(`  ${sym.bullet} Restart Claude Code / Cursor to pick up the new config`);
-  console.log(`  ${sym.bullet} Run ${color.cyan("npx agent-stack measure --since 7d")} after a week to see savings`);
-  console.log(`  ${sym.bullet} Run ${color.cyan("npx agent-stack doctor")} anytime to lint`);
+  console.log(`  ${sym.bullet} Run ${color.cyan("npx @drmahdikazempour/agent-stack measure --since 7d")} after a week to see savings`);
+  console.log(`  ${sym.bullet} Run ${color.cyan("npx @drmahdikazempour/agent-stack doctor")} anytime to lint`);
 }
 
 function getProfileSkills(plan: Plan): string[] {

@@ -62,7 +62,7 @@ _Things that have bitten contributors here. Add to this list whenever a non-obvi
 
 - Don't load entire directories — query \`${ctx.graph}\` first.
 - Don't paste raw, uncompressed command output; \`${ctx.compression}\` handles that automatically via a hook.
-- Don't edit \`.claude/settings.json\` hooks by hand — run \`npx agent-stack\` commands so the hook merger stays the sole writer.
+- Don't edit \`.claude/settings.json\` hooks by hand — run \`npx @drmahdikazempour/agent-stack\` commands so the hook merger stays the sole writer.
 `;
 }
 
@@ -95,8 +95,8 @@ Bootstrap or re-sync this repo's optimization layer.
 - After pulling changes that touched \`.claude/\` or \`integrations/\`.
 
 ## What to do
-1. Run \`npx agent-stack doctor\` to see current state.
-2. If unconfigured or drifted, run \`npx agent-stack init\` (it backs up, merges, and verifies).
+1. Run \`npx @drmahdikazempour/agent-stack doctor\` to see current state.
+2. If unconfigured or drifted, run \`npx @drmahdikazempour/agent-stack init\` (it backs up, merges, and verifies).
 3. Report the chosen profile, wired hooks, and baseline token count.
 
 Skills decide *when*; the CLI decides *how*. Always shell out to the CLI for file writes.`,
@@ -115,7 +115,7 @@ Lint the optimization layer and report problems.
 - Every adapter binary callable (or clearly flagged config-only).
 
 ## What to do
-Run \`npx agent-stack doctor\`. Surface failures with the exact file and limit. Offer \`agent-stack optimize\` for auto-fixable issues.`,
+Run \`npx @drmahdikazempour/agent-stack doctor\`. Surface failures with the exact file and limit. Offer \`agent-stack optimize\` for auto-fixable issues.`,
   },
   "stack-graph-profile": {
     description:
@@ -130,8 +130,8 @@ Manage the graph backend and profile.
 
 ## What to do
 - Show current profile: read \`.agent-stack/installed.json\`.
-- Switch profile: \`npx agent-stack profile use <code|review|multimodal|spec>\`.
-- Switch only the graph: \`npx agent-stack graph use <name>\`.
+- Switch profile: \`npx @drmahdikazempour/agent-stack profile use <code|review|multimodal|spec>\`.
+- Switch only the graph: \`npx @drmahdikazempour/agent-stack graph use <name>\`.
 Both regenerate affected files and re-verify.`,
   },
   "stack-handoff": {
@@ -142,10 +142,10 @@ Both regenerate affected files and re-verify.`,
 Persist and resume working state across sessions.
 
 ## Write a handoff
-\`npx agent-stack handoff write\` — captures git state, the current task, decisions made, and next steps into \`.agent-stack/handoff.md\`.
+\`npx @drmahdikazempour/agent-stack handoff write\` — captures git state, the current task, decisions made, and next steps into \`.agent-stack/handoff.md\`.
 
 ## Resume
-\`npx agent-stack handoff resume\` — prints the latest handoff so you can continue exactly where the last session stopped.
+\`npx @drmahdikazempour/agent-stack handoff resume\` — prints the latest handoff so you can continue exactly where the last session stopped.
 
 Use at the end of any session and at the start of any resumed one.`,
   },
@@ -157,8 +157,8 @@ Use at the end of any session and at the start of any resumed one.`,
 Quantify token usage with the neutral \`ccusage\` tool.
 
 ## What to do
-- Baseline: \`npx agent-stack measure\` (init already stored one in \`.agent-stack/baseline.json\`).
-- Compare: \`npx agent-stack measure --since 7d\` — reports baseline vs recent average and the % input-token reduction.
+- Baseline: \`npx @drmahdikazempour/agent-stack measure\` (init already stored one in \`.agent-stack/baseline.json\`).
+- Compare: \`npx @drmahdikazempour/agent-stack measure --since 7d\` — reports baseline vs recent average and the % input-token reduction.
 
 Never report vendor self-claimed savings; always use ccusage's local JSONL.`,
   },
@@ -195,9 +195,9 @@ function agentFile(name: string): PlannedFile {
 }
 
 const COMMANDS: Record<string, string> = {
-  "stack-audit": "Run `npx agent-stack audit` and summarize the token report: CLAUDE.md size, skill metadata budget, MCP tool-def budget, and any items over limit.",
-  "stack-handoff": "Run `npx agent-stack handoff write` to checkpoint, or `resume` to restore context. Ask which the user wants if unclear.",
-  "stack-measure": "Run `npx agent-stack measure --since 7d` and report baseline vs current token usage and the % reduction.",
+  "stack-audit": "Run `npx @drmahdikazempour/agent-stack audit` and summarize the token report: CLAUDE.md size, skill metadata budget, MCP tool-def budget, and any items over limit.",
+  "stack-handoff": "Run `npx @drmahdikazempour/agent-stack handoff write` to checkpoint, or `resume` to restore context. Ask which the user wants if unclear.",
+  "stack-measure": "Run `npx @drmahdikazempour/agent-stack measure --since 7d` and report baseline vs current token usage and the % reduction.",
 };
 
 function commandFile(name: string, instruction: string): PlannedFile {

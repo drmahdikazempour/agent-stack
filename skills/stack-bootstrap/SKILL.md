@@ -13,8 +13,8 @@ Bootstrap or re-sync this repo's optimization layer. **Skills decide *when*; the
 - When startup context feels heavy and you suspect the setup drifted.
 
 ## What to do
-1. Run `npx agent-stack doctor` to see current state and whether anything is configured.
-2. If unconfigured or drifted, run `npx agent-stack init`. It:
+1. Run `npx @drmahdikazempour/agent-stack doctor` to see current state and whether anything is configured.
+2. If unconfigured or drifted, run `npx @drmahdikazempour/agent-stack init`. It:
    - detects host(s), profile, package manager, and existing config,
    - backs up anything it will touch into `.agent-stack.bak.<ts>/`,
    - installs the profile's pinned adapters (or runs config-only with `--no-install`),

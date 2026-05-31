@@ -4,7 +4,7 @@
 
 ```bash
 cd my-repo
-npx agent-stack init
+npx @drmahdikazempour/agent-stack init
 ```
 
 That's the whole install. `init` auto-detects host, repo, and profile; installs the right adapters; generates the full Claude Code surface and the Cursor mirror; merges hooks safely; verifies everything loads; and records a `ccusage` token baseline. It only prompts when the answer is genuinely ambiguous (typically the single `Proceed?` confirm).
@@ -34,20 +34,20 @@ agent-stack orchestrates the good tools through **pinned, version-locked adapter
 
 ```
 # Setup — run once per repo
-npx agent-stack init [--yes] [--dry-run] [--targets ...] [--profile ...]
+npx @drmahdikazempour/agent-stack init [--yes] [--dry-run] [--targets ...] [--profile ...]
                      [--no-install] [--allow-noncommercial] [--overwrite] [--force]
 
 # Maintenance — post-install, on demand
-npx agent-stack audit                  # token counts + budget report
-npx agent-stack optimize               # apply audit fixes (with approval)
-npx agent-stack doctor                 # lint everything (exit 1 on issues)
-npx agent-stack measure [--since 7d]   # ccusage baseline vs current
-npx agent-stack profile use <name>     # swap profile; regenerate
-npx agent-stack profile show           # show current profile
-npx agent-stack graph use <name>       # swap graph backend
-npx agent-stack handoff write|resume   # continuity files
-npx agent-stack sync                   # regenerate Cursor mirror from CLAUDE.md
-npx agent-stack uninstall              # restore backup, remove generated files
+npx @drmahdikazempour/agent-stack audit                  # token counts + budget report
+npx @drmahdikazempour/agent-stack optimize               # apply audit fixes (with approval)
+npx @drmahdikazempour/agent-stack doctor                 # lint everything (exit 1 on issues)
+npx @drmahdikazempour/agent-stack measure [--since 7d]   # ccusage baseline vs current
+npx @drmahdikazempour/agent-stack profile use <name>     # swap profile; regenerate
+npx @drmahdikazempour/agent-stack profile show           # show current profile
+npx @drmahdikazempour/agent-stack graph use <name>       # swap graph backend
+npx @drmahdikazempour/agent-stack handoff write|resume   # continuity files
+npx @drmahdikazempour/agent-stack sync                   # regenerate Cursor mirror from CLAUDE.md
+npx @drmahdikazempour/agent-stack uninstall              # restore backup, remove generated files
 ```
 
 ## Profiles
@@ -77,7 +77,7 @@ One repo, two faces, zero duplication:
   - `commands/` — `init` + maintenance commands.
 - **`integrations/`** — `profiles.json`, `versions.json` (pinned), `licenses.json` (gates `--allow-noncommercial`).
 
-**Zero runtime dependencies** — the CLI ships pure Node, so `npx agent-stack init` installs in seconds.
+**Zero runtime dependencies** — the CLI ships pure Node, so `npx @drmahdikazempour/agent-stack init` installs in seconds.
 
 ## Licensing
 

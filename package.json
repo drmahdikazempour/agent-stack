@@ -1,6 +1,9 @@
 {
-  "name": "agent-stack",
+  "name": "@drmahdikazempour/agent-stack",
   "version": "0.1.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Skills-first optimization toolkit for Claude Code (+ Cursor). One command sets up, activates, and measures an optimized agent context.",
   "keywords": [
     "claude",

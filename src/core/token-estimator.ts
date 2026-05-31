@@ -4,7 +4,7 @@ import { SPEC } from "../constants.js";
  * Internal token budgeting only. Per PRD §11, gpt-tokenizer is suggested for
  * internal budgeting and ccusage is authoritative for user-facing measurement.
  * We use a dependency-free heuristic (chars / CHARS_PER_TOKEN, with a small
- * correction for whitespace-dense prose) so `npx agent-stack init` installs in
+ * correction for whitespace-dense prose) so `npx @drmahdikazempour/agent-stack init` installs in
  * seconds with zero runtime dependencies. This is never reported as a savings
  * number — that always comes from ccusage.
  */

@@ -21,8 +21,8 @@ Manage the graph backend and profile bundle.
 - Graph queries are returning irrelevant or incomplete context.
 
 ## What to do
-- **Show current:** read `.agent-stack/installed.json` (or `npx agent-stack profile show`).
-- **Switch profile:** `npx agent-stack profile use <name>` — swaps the graph + compression + skills and regenerates.
-- **Switch only the graph:** `npx agent-stack graph use <codegraph|code-review-graph|graphify>`.
+- **Show current:** read `.agent-stack/installed.json` (or `npx @drmahdikazempour/agent-stack profile show`).
+- **Switch profile:** `npx @drmahdikazempour/agent-stack profile use <name>` — swaps the graph + compression + skills and regenerates.
+- **Switch only the graph:** `npx @drmahdikazempour/agent-stack graph use <codegraph|code-review-graph|graphify>`.
 
 Both operations back up first, regenerate the affected files, and re-run activation verification.
