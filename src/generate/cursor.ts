@@ -25,7 +25,7 @@ export function generateCursor(ctx: GenContext): PlannedFile[] {
       mdc(
         "agent-stack core conventions for this repo",
         "**/*",
-        `# ${ctx.repoName} — core conventions\n\n- Profile: \`${ctx.profileName}\`. Graph: \`${ctx.graph}\`. Compression: \`${ctx.compression}\`.\n- Prefer graph queries and targeted reads over loading whole directories.\n- Keep responses terse to minimize token cost.\n- See \`AGENTS.md\` for the shared convention shared with Claude Code.`,
+        `# ${ctx.repoName} — core conventions\n\n- Profile: \`${ctx.profileName}\`. Code map: \`.agent-stack/graph.md\`. Compression: \`${ctx.compressionLabel}\`.\n- Grep the code map and do targeted reads instead of loading whole directories.\n- Compress large command output before letting it into context.\n- Keep responses terse to minimize token cost.\n- See \`AGENTS.md\` for the convention shared with Claude Code.`,
       ),
     ),
   );
@@ -64,12 +64,13 @@ export function generateCursor(ctx: GenContext): PlannedFile[] {
 Shared agent convention for **${ctx.repoName}** (read by Claude Code and Cursor).
 
 - **Profile:** \`${ctx.profileName}\`
-- **Code graph:** \`${ctx.graph}\` — query before reading files wholesale.
-- **Shell compression:** \`${ctx.compression}\` — large output is compressed automatically.
+- **Code map:** \`.agent-stack/graph.md\` — grep it to find symbols before reading files.
+- **Compression:** \`${ctx.compressionLabel}\` — pipe large output through it.
 - **Measurement:** \`ccusage\`.
 
 ## Working agreement
-- Prefer the graph and targeted reads over loading whole directories.
+- Grep the code map and do targeted reads instead of loading whole directories.
+- Compress large command output before letting it into context.
 - Keep responses terse; the user values low token cost.
 - Match existing code style; never reformat unrelated code.
 - Run the project's own test/lint commands before claiming done.

@@ -1,6 +1,6 @@
 export type Host = "claude" | "cursor";
 
-export type ProfileName = "code" | "review" | "multimodal" | "research" | "spec";
+export type ProfileName = "code" | "review" | "multimodal" | "research" | "spec" | "max";
 
 export type PackageManager = "pnpm" | "yarn" | "bun" | "npm";
 
@@ -42,7 +42,13 @@ export interface ProfileConfig {
 }
 
 export interface AdapterInstallSpec {
-  kind: "npm" | "cargo" | "skill";
+  /**
+   * "npm" auto-installs from the real registry. "preinstalled" means agent-stack
+   * never installs it (the npm name is unrelated/squatted) — it is only used if
+   * the genuine binary is already on PATH. "cargo"/"skill" are legacy install
+   * kinds kept for completeness.
+   */
+  kind: "npm" | "cargo" | "skill" | "preinstalled";
   package: string;
   bin?: string;
 }

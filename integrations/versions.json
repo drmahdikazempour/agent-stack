@@ -1,42 +1,33 @@
 {
-  "$comment": "Pinned versions of every adapter. The CLI never installs a floating version.",
+  "$comment": "Only ccusage is auto-installed (it is the genuine Claude Code usage tool on npm). The graph and compression tools agent-stack uses by default are BUILT IN (see src/builtin/). Third-party graph/compression binaries are 'preinstalled' kind: used only if the real tool is already on PATH, never auto-installed by name (those npm names are unrelated/squatted).",
   "adapters": {
-    "rtk": {
-      "version": "0.38.4",
-      "install": { "kind": "cargo", "package": "rtk-cli", "bin": "rtk" },
-      "fallback": { "kind": "npm", "package": "@rtk/cli", "bin": "rtk" }
-    },
-    "codegraph": {
-      "version": "0.8.2",
-      "install": { "kind": "npm", "package": "codegraph", "bin": "codegraph" }
-    },
-    "code-review-graph": {
-      "version": "0.4.1",
-      "install": { "kind": "npm", "package": "code-review-graph", "bin": "code-review-graph" }
-    },
-    "graphify": {
-      "version": "0.6.0",
-      "install": { "kind": "skill", "package": "safishamsi/graphify" }
-    },
     "ccusage": {
-      "version": "15.2.1",
+      "version": "20.0.6",
       "install": { "kind": "npm", "package": "ccusage", "bin": "ccusage" }
     },
-    "caveman": {
-      "version": "1.8.2",
-      "install": { "kind": "skill", "package": "caveman" }
+    "rtk": {
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "rtk", "bin": "rtk" }
     },
-    "superpowers": {
-      "version": "2.0.0",
-      "install": { "kind": "skill", "package": "obra/superpowers" }
+    "codegraph": {
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "codegraph", "bin": "codegraph" }
+    },
+    "code-review-graph": {
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "code-review-graph", "bin": "code-review-graph" }
+    },
+    "graphify": {
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "graphify", "bin": "graphify" }
     },
     "context-mode": {
-      "version": "0.3.0",
-      "install": { "kind": "skill", "package": "mksglu/context-mode" }
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "context-mode", "bin": "context-mode" }
     },
-    "cc-spex": {
-      "version": "0.2.0",
-      "install": { "kind": "skill", "package": "rhuss/cc-spex" }
+    "token-optimizer": {
+      "version": "*",
+      "install": { "kind": "preinstalled", "package": "token-optimizer", "bin": "token-optimizer" }
     }
   }
 }

@@ -3,7 +3,7 @@ import { hasBinary, run } from "../core/util.js";
 
 export interface InstallOutcome {
   adapter: string;
-  status: "present" | "installed" | "skipped" | "failed" | "config-only";
+  status: "present" | "installed" | "skipped" | "failed" | "config-only" | "optional-absent";
   detail: string;
 }
 
@@ -32,6 +32,9 @@ function doInstall(spec: AdapterInstallSpec, version: string): { ok: boolean; de
       const r = run("npx", ["-y", "skills", "add", spec.package], { timeoutMs: 180_000 });
       return { ok: r.ok, detail: r.ok ? `skills add ${spec.package}` : r.stderr.slice(0, 200) };
     }
+    case "preinstalled":
+      // Never auto-installed; handled before doInstall is ever reached.
+      return { ok: false, detail: "preinstalled adapters are not auto-installed" };
   }
 }
 
@@ -47,6 +50,15 @@ export function ensureAdapter(
 
   if (bin && hasBinary(bin)) {
     return { adapter: adapter.name, status: "present", detail: `${bin} already on PATH` };
+  }
+
+  // Never auto-install 'preinstalled' adapters (their npm names are unrelated).
+  if (adapter.install.kind === "preinstalled") {
+    return {
+      adapter: adapter.name,
+      status: "optional-absent",
+      detail: `optional; install the real ${adapter.install.package} yourself to enable it`,
+    };
   }
 
   if (!opts.install) {

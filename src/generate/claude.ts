@@ -10,6 +10,13 @@ function pf(path: string, contents: string, host: PlannedFile["host"] = "shared"
 
 /** Factual root CLAUDE.md, kept ≤800 tokens (PRD success metric). */
 function claudeMd(ctx: GenContext): string {
+  const graphLine =
+    ctx.graph === "none"
+      ? ""
+      : `- Code map: \`.agent-stack/graph.md\` — grep it to find where a symbol lives before opening files.\n`;
+  const terseLine = ctx.terse
+    ? "- Output style: TERSE. Answer in the fewest words; no preamble, no recap, no restating the question.\n"
+    : "- Keep responses terse; the user values low token cost.\n";
   return `# ${ctx.repoName}
 
 > Optimized by [agent-stack](https://github.com/drmahdikazempour/agent-stack) · profile: \`${ctx.profileName}\`
@@ -20,14 +27,13 @@ function claudeMd(ctx: GenContext): string {
 - Package manager: ${ctx.packageManager}
 
 ## Context tooling (active)
-- Code graph: \`${ctx.graph}\` — query before reading files wholesale.
-- Shell compression: \`${ctx.compression}\` — large command output is compressed before it hits context.
-- Measurement: \`ccusage\` — token usage is logged per turn.
+${graphLine}- Compression: \`${ctx.compressionLabel}\` — pipe large output through it, e.g. \`npm run build 2>&1 | npx -y @drmahdikazempour/agent-stack compress\`.
+- Measurement: \`ccusage\` — token usage logged per turn to \`.agent-stack/usage.jsonl\`.
 
 ## How to work here
-- Prefer the graph and targeted reads over loading whole directories.
-- Keep responses terse; the user values low token cost.
-- Skills available: ${ctx.profile.skills.map((s) => `\`/${s}\``).join(", ")}.
+- Grep \`.agent-stack/graph.md\` and do targeted reads instead of loading whole directories.
+- Compress large command output before letting it into context.
+${terseLine}- Skills: ${ctx.profile.skills.map((s) => `\`/${s}\``).join(", ")}.
 - See \`ARCHITECTURE_MAP.md\` for structure and \`COMMON_MISTAKES.md\` for known traps.
 
 ## Conventions
@@ -39,7 +45,7 @@ function claudeMd(ctx: GenContext): string {
 function architectureMap(ctx: GenContext): string {
   return `# Architecture Map
 
-_Auto-scaffolded by agent-stack on ${ctx.date}. Fill in as the project grows; the graph backend (\`${ctx.graph}\`) keeps the live view._
+_Auto-scaffolded by agent-stack on ${ctx.date}. Fill in as the project grows; the code map (\`.agent-stack/graph.md\`) keeps the live symbol view._
 
 ## Entry points
 - (add the main entry points here)
@@ -60,8 +66,8 @@ function commonMistakes(ctx: GenContext): string {
 
 _Things that have bitten contributors here. Add to this list whenever a non-obvious bug is fixed._
 
-- Don't load entire directories — query \`${ctx.graph}\` first.
-- Don't paste raw, uncompressed command output; \`${ctx.compression}\` handles that automatically via a hook.
+- Don't load entire directories — grep \`.agent-stack/graph.md\` first.
+- Don't paste raw, uncompressed command output; pipe it through \`npx -y @drmahdikazempour/agent-stack compress\`.
 - Don't edit \`.claude/settings.json\` hooks by hand — run \`npx @drmahdikazempour/agent-stack\` commands so the hook merger stays the sole writer.
 `;
 }

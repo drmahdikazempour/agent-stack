@@ -9,6 +9,7 @@ import { ensureAdapter, type InstallOutcome } from "../adapters/install.js";
 import { wireHooks } from "../wire-hooks.js";
 import { activate, writeManifest } from "../activate.js";
 import { captureUsage, writeBaseline } from "../adapters/ccusage.js";
+import { runGraphRefresh } from "./graph.js";
 import { confirm } from "../prompt.js";
 
 function printPlan(plan: Plan): void {
@@ -146,6 +147,12 @@ export async function runInit(opts: InitOptions): Promise<InitResult> {
       throw new Error(`activation failed:\n    ${failed.join("\n    ")}`);
     }
     console.log(`  ${sym.ok} All skills load, all hooks present, CLAUDE.md verified`);
+
+    // 8b. Build the initial code map so it's there on the first session.
+    if (plan.profile !== "research") {
+      runGraphRefresh(opts.cwd, { quiet: true });
+      console.log(`  ${sym.ok} Built code map → .agent-stack/graph.md`);
+    }
 
     // 9. Baseline
     const baseline = captureUsage(opts.cwd, "7d");

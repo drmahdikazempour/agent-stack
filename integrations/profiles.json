@@ -1,10 +1,10 @@
 {
-  "$comment": "A profile is a named bundle of graph backend + compression tool + skill set + hook config. init picks one automatically; `profile use <name>` swaps it.",
+  "$comment": "A profile bundles graph backend + compression + skill set + hooks. Default graph/compression are 'builtin' (agent-stack's own, shipped in src/builtin/). An external name (e.g. 'codegraph') is used only if that real binary is already on PATH. 'max' turns on every feature at once.",
   "profiles": {
     "code": {
       "description": "Normal code repo, no large media. The default.",
-      "graph": "codegraph",
-      "compression": "rtk",
+      "graph": "builtin",
+      "compression": "builtin",
       "caveman": false,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer", "stack-reviewer"],
@@ -12,8 +12,8 @@
     },
     "review": {
       "description": "PR/review-heavy repo (many PRs, CODEOWNERS).",
-      "graph": "code-review-graph",
-      "compression": "rtk",
+      "graph": "builtin",
+      "compression": "builtin",
       "caveman": false,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer", "stack-reviewer"],
@@ -21,17 +21,17 @@
     },
     "multimodal": {
       "description": "Repo contains PDFs, video, many large images.",
-      "graph": "graphify",
-      "compression": "rtk",
+      "graph": "builtin",
+      "compression": "builtin",
       "caveman": false,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer"],
       "requires": []
     },
     "research": {
-      "description": "Large-output sandbox via context-mode. Opt-in only.",
+      "description": "Large-output sandbox. Opt-in (uses context-mode if present).",
       "graph": "none",
-      "compression": "context-mode",
+      "compression": "builtin",
       "caveman": false,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer"],
@@ -39,9 +39,18 @@
     },
     "spec": {
       "description": "spec-kit / cc-spex detected, or explicit flag.",
-      "graph": "codegraph",
-      "compression": "rtk",
+      "graph": "builtin",
+      "compression": "builtin",
       "caveman": false,
+      "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
+      "agents": ["stack-explorer", "stack-reviewer"],
+      "requires": []
+    },
+    "max": {
+      "description": "Everything on at once: code map + compression + terse output + all skills, agents, and hooks + measurement. Maximum token reduction.",
+      "graph": "builtin",
+      "compression": "builtin",
+      "caveman": true,
       "skills": ["stack-bootstrap", "stack-doctor", "stack-graph-profile", "stack-handoff", "stack-measure"],
       "agents": ["stack-explorer", "stack-reviewer"],
       "requires": []

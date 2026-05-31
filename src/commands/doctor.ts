@@ -3,8 +3,7 @@ import fs from "node:fs";
 import { PATHS } from "../constants.js";
 import { audit } from "../audit.js";
 import { planHooks } from "../wire-hooks.js";
-import { hooksForAdapters } from "../adapters/hooks.js";
-import { adaptersForProfile } from "../adapters/registry.js";
+import { hooksForProfile } from "../adapters/hooks.js";
 import { getProfileConfig } from "../core/plan.js";
 import { color, sym, fileExists, readJsonSafe } from "../core/util.js";
 import { parseFrontmatter } from "../generate/frontmatter.js";
@@ -59,8 +58,7 @@ export function runDoctor(cwd: string, opts: { skillsOnly?: boolean } = {}): Doc
   if (manifest) {
     try {
       const profile = getProfileConfig(manifest.profile as any);
-      const adapters = adaptersForProfile(profile.graph, profile.compression, profile.caveman);
-      const specs = hooksForAdapters(adapters);
+      const specs = hooksForProfile(profile);
       const { result } = planHooks(cwd, specs);
       const ok = result.conflicts.length === 0;
       report("hook conflicts", ok, `${result.conflicts.length} conflict(s)`);

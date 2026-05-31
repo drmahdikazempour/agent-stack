@@ -1,52 +1,43 @@
 import { HOOK_SIGNATURE } from "../constants.js";
-import type { AdapterDescriptor, HookSpec } from "../core/types.js";
+import type { HookSpec, ProfileConfig } from "../core/types.js";
 
 /**
- * Adapters return hook *specs*; they never edit settings.json themselves.
- * wire-hooks is the sole writer (PRD §12). Every command is tagged with the
- * agent-stack signature so the merger can find and dedupe its own entries.
+ * Hooks are derived from the profile and use agent-stack's OWN built-in
+ * commands (graph refresh, ccusage logging) rather than fictional third-party
+ * binaries. wire-hooks remains the sole writer of settings.json; this module
+ * only returns specs. Every command carries the agent-stack signature so the
+ * merger can find and dedupe its own entries.
  */
+
+const NPX = "npx -y @drmahdikazempour/agent-stack";
 
 function tag(cmd: string): string {
   return `${cmd} # ${HOOK_SIGNATURE}`;
 }
 
-const HOOKS_BY_ADAPTER: Record<string, HookSpec[]> = {
-  rtk: [
-    {
-      event: "PreToolUse",
-      matcher: "Bash",
-      command: tag("rtk wrap --stdin"),
-      reason: "Compress shell output before it enters context",
-    },
-  ],
-  codegraph: [
-    {
-      event: "SessionStart",
-      command: tag("codegraph refresh --quiet"),
-      reason: "Refresh the code graph at session start",
-    },
-  ],
-  "code-review-graph": [
-    {
-      event: "SessionStart",
-      command: tag("code-review-graph refresh --quiet"),
-      reason: "Refresh the review graph at session start",
-    },
-  ],
-  ccusage: [
-    {
-      event: "Stop",
-      command: tag("ccusage --json >> .agent-stack/usage.jsonl 2>/dev/null || true"),
-      reason: "Append per-turn token usage for measurement",
-    },
-  ],
-};
+const BUILTIN_GRAPH = new Set(["builtin", ""]);
 
-export function hooksForAdapters(adapters: AdapterDescriptor[]): HookSpec[] {
-  const out: HookSpec[] = [];
-  for (const a of adapters) {
-    for (const h of HOOKS_BY_ADAPTER[a.name] ?? []) out.push(h);
+export function hooksForProfile(profile: ProfileConfig): HookSpec[] {
+  const hooks: HookSpec[] = [];
+
+  // Refresh the compact code map at session start (skip for graph: none).
+  if (profile.graph && profile.graph !== "none") {
+    const cmd = BUILTIN_GRAPH.has(profile.graph)
+      ? `${NPX} graph refresh --quiet`
+      : `${profile.graph} refresh --quiet`;
+    hooks.push({
+      event: "SessionStart",
+      command: tag(`${cmd} 2>/dev/null || true`),
+      reason: "Refresh the code map at session start so the agent greps it instead of reading files",
+    });
   }
-  return out;
+
+  // Always log token usage for measurement (neutral ccusage).
+  hooks.push({
+    event: "Stop",
+    command: tag("ccusage --json >> .agent-stack/usage.jsonl 2>/dev/null || true"),
+    reason: "Append per-turn token usage for measurement",
+  });
+
+  return hooks;
 }

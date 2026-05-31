@@ -1,14 +1,11 @@
 {
-  "$comment": "Gates --allow-noncommercial. permissive=true adapters install by default; permissive=false require the opt-in flag and are NEVER vendored, only shelled out to at runtime.",
+  "$comment": "Gates --allow-noncommercial. The built-in graph/compression are MIT (part of this repo). Third-party adapters are detect-only; non-permissive ones still require the opt-in flag before agent-stack will shell out to them.",
   "adapters": {
+    "ccusage": { "spdx": "MIT", "permissive": true },
     "rtk": { "spdx": "Apache-2.0", "permissive": true },
     "codegraph": { "spdx": "MIT", "permissive": true },
     "code-review-graph": { "spdx": "MIT", "permissive": true },
     "graphify": { "spdx": "MIT", "permissive": true },
-    "ccusage": { "spdx": "MIT", "permissive": true },
-    "caveman": { "spdx": "MIT", "permissive": true },
-    "superpowers": { "spdx": "MIT", "permissive": true },
-    "cc-spex": { "spdx": "Apache-2.0", "permissive": true },
     "context-mode": { "spdx": "Elastic-2.0", "permissive": false, "requires": "allow-noncommercial" },
     "token-optimizer": { "spdx": "PolyForm-Noncommercial-1.0.0", "permissive": false, "requires": "allow-noncommercial" }
   }

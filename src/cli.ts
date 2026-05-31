@@ -11,6 +11,8 @@ import { runProfileUse, runGraphUse, showProfile } from "./commands/profile.js";
 import { runSync } from "./commands/sync.js";
 import { runUninstall } from "./commands/uninstall.js";
 import { runOptimize } from "./commands/optimize.js";
+import { runCompress } from "./commands/compress.js";
+import { runGraphRefresh, runGraphQuery } from "./commands/graph.js";
 
 interface Parsed {
   command: string;
@@ -50,6 +52,11 @@ const HELP = `${color.bold(`agent-stack v${TOOL_VERSION}`)} — skills-first opt
 ${color.bold("Setup (run once per repo):")}
   agent-stack init [flags]            detect, install, generate, wire, activate, baseline
 
+${color.bold("Token-cutting built-ins (work standalone, in pipes, or via hooks):")}
+  agent-stack compress                compress piped output  (cmd 2>&1 | agent-stack compress)
+  agent-stack graph refresh           rebuild the compact code map (.agent-stack/graph.md)
+  agent-stack graph query <term>      find where a symbol/file lives in the map
+
 ${color.bold("Maintenance:")}
   agent-stack audit                   token counts + budget report
   agent-stack optimize                apply audit fixes (with approval)
@@ -57,18 +64,19 @@ ${color.bold("Maintenance:")}
   agent-stack measure [--since 7d]    ccusage report (baseline vs current)
   agent-stack profile use <name>      swap profile; regenerate
   agent-stack profile show            show current profile
-  agent-stack graph use <name>        swap graph backend
+  agent-stack graph use <name>        swap to an external graph backend (if installed)
   agent-stack handoff write|resume    continuity files
   agent-stack sync                    regenerate Cursor mirror from CLAUDE.md
   agent-stack uninstall               restore backup, remove generated files
 
 ${color.bold("init flags:")}
+  --all                  turn on EVERY feature at once (the 'max' profile)
   --yes                  skip the confirm prompt
   --dry-run              show the plan, write nothing
   --targets claude,cursor force target list
-  --profile <name>       force profile (code|review|multimodal|research|spec)
-  --no-install           don't install adapter binaries (configs only)
-  --allow-noncommercial  enable v2 adapters (context-mode, token-optimizer)
+  --profile <name>       force profile (code|review|multimodal|spec|research|max)
+  --no-install           don't install ccusage (configs only)
+  --allow-noncommercial  enable opt-in adapters (context-mode, token-optimizer)
   --overwrite            replace existing files instead of merging (still backs up)
   --force                re-run even if already installed
 `;
@@ -79,12 +87,14 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
 
   switch (command) {
     case "init": {
+      // --all turns on everything at once (the `max` profile).
+      const profileFlag = flags.all ? "max" : ((flags.profile as ProfileName | undefined) || undefined);
       const opts: InitOptions = {
         cwd,
         yes: !!flags.yes,
         dryRun: !!flags["dry-run"],
         targets: asList(flags.targets) as Host[] | undefined,
-        profile: (flags.profile as ProfileName | undefined) || undefined,
+        profile: profileFlag,
         noInstall: !!flags["no-install"],
         allowNoncommercial: !!flags["allow-noncommercial"],
         overwrite: !!flags.overwrite,
@@ -109,13 +119,19 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       return 0;
     }
     case "graph": {
-      if (positionals[0] === "use") return (await runGraphUse(cwd, positionals[1] ?? "")).ok ? 0 : 1;
-      console.error("Usage: agent-stack graph use <codegraph|code-review-graph|graphify>");
-      return 1;
+      const sub = positionals[0];
+      if (sub === "use") return (await runGraphUse(cwd, positionals[1] ?? "")).ok ? 0 : 1;
+      if (sub === "query") return runGraphQuery(cwd, positionals[1] ?? "").ok ? 0 : 1;
+      // "refresh" (default): rebuild the built-in code map.
+      return runGraphRefresh(cwd, { quiet: !!flags.quiet }).ok ? 0 : 1;
     }
     case "handoff": {
       const mode = positionals[0] === "resume" ? "resume" : "write";
       return runHandoff(cwd, mode).ok ? 0 : 1;
+    }
+    case "compress": {
+      const maxLines = flags["max-lines"] ? parseInt(flags["max-lines"] as string, 10) : undefined;
+      return runCompress({ maxLines, stats: !!flags.stats, file: flags.file as string | undefined });
     }
     case "sync":
       return runSync(cwd).ok ? 0 : 1;

@@ -11,6 +11,11 @@ export interface GenContext {
   repoName: string;
   graph: string;
   compression: string;
+  /** Human-friendly labels for generated docs. */
+  graphLabel: string;
+  compressionLabel: string;
+  /** Terse output mode (caveman) is on. */
+  terse: boolean;
   date: string;
 }
 
@@ -29,6 +34,15 @@ export function buildContext(
     repoName: detection.cwd.split("/").filter(Boolean).pop() ?? "project",
     graph: profile.graph,
     compression: profile.compression,
+    graphLabel:
+      profile.graph === "none"
+        ? "none"
+        : profile.graph === "builtin"
+          ? "agent-stack code map (.agent-stack/graph.md)"
+          : profile.graph,
+    compressionLabel:
+      profile.compression === "builtin" ? "agent-stack compress" : profile.compression,
+    terse: profile.caveman,
     date: new Date().toISOString().slice(0, 10),
   };
 }

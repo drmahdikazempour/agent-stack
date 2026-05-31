@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { TOOL_VERSION } from "../constants.js";
 import { integrationsPath } from "./pkg-root.js";
 import { adaptersForProfile } from "../adapters/registry.js";
-import { hooksForAdapters } from "../adapters/hooks.js";
+import { hooksForProfile } from "../adapters/hooks.js";
 import { buildContext } from "../generate/context.js";
 import { generateClaude } from "../generate/claude.js";
 import { generateCursor } from "../generate/cursor.js";
@@ -41,7 +41,7 @@ export function buildPlan(detection: Detection, opts: InitOptions): Plan {
   if (targets.includes("cursor")) files.push(...generateCursor(ctx));
   files.push(...generateMcp(ctx));
 
-  const hooks = hooksForAdapters(adapters);
+  const hooks = hooksForProfile(profile);
 
   const alreadyInstalled =
     !opts.force &&

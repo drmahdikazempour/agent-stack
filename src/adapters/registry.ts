@@ -29,16 +29,22 @@ export function allAdapterNames(): string[] {
   return Object.keys(versions.adapters);
 }
 
-/** The adapters a profile needs (graph + compression + measurement + optional caveman). */
+const BUILTIN = new Set(["builtin", "none", ""]);
+
+/**
+ * Adapters a profile needs. Built-in graph/compression aren't adapters (they
+ * ship in src/builtin/). ccusage (measurement) is always present. An external
+ * graph/compression name maps to a detect-only adapter that is used only if its
+ * real binary is already on PATH.
+ */
 export function adaptersForProfile(
   graph: string,
   compression: string,
-  caveman: boolean,
+  _caveman: boolean,
 ): AdapterDescriptor[] {
   const names = new Set<string>();
-  if (graph && graph !== "none") names.add(graph);
-  if (compression) names.add(compression);
   names.add("ccusage"); // measurement is always present
-  if (caveman) names.add("caveman");
+  if (graph && !BUILTIN.has(graph)) names.add(graph);
+  if (compression && !BUILTIN.has(compression)) names.add(compression);
   return [...names].map(getAdapter);
 }
