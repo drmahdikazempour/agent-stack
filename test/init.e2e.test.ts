@@ -8,6 +8,9 @@ function opts(cwd: string, over: Partial<InitOptions> = {}): InitOptions {
     cwd,
     yes: true,
     dryRun: false,
+    // Force both targets so the suite is deterministic regardless of whether
+    // the host machine has ~/.cursor (CI does not; dev machines often do).
+    targets: ["claude", "cursor"],
     noInstall: true, // never touch the network in CI
     allowNoncommercial: false,
     overwrite: false,
